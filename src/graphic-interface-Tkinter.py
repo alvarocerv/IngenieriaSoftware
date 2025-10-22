@@ -6,7 +6,7 @@ def mostrar_mensaje():
     # Mostrar un mensaje después de presionar el botón
     messagebox.showinfo("Mensaje", "¡Has presionado el botón!")
 
-# Función para habilitar el cuadro de texto
+# Función que habilita el cuadro de texto
 def habilitar_texto():
     entrada_texto.config(state="normal")  # Habilita el cuadro de texto
 
