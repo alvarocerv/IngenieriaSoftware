@@ -4,45 +4,68 @@ import pandas as pd
 import sqlite3
 import os
 
-def cargar_archivo():
-    # Abrir cuadro de diálogo para seleccionar archivo
-    archivo = filedialog.askopenfilename(
+
+# Función para cargar archivos
+
+def load_data(file_path):
+    try:
+        if file_path.endswith(".csv"):
+            df = pd.read_csv(file_path)
+        elif file_path.endswith((".xls", ".xlsx")):
+            df = pd.read_excel(file_path)
+        elif file_path.endswith((".sqlite", ".db")):
+            conn = sqlite3.connect(file_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            tables = cursor.fetchall()
+            if not tables:
+                raise ValueError("No se encontraron tablas en la base de datos SQLite.")
+            table_name = tables[0][0]
+            df = pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
+            conn.close()
+        else:
+            raise ValueError("Formato de archivo no válido.")
+        return df
+
+    except FileNotFoundError:
+        messagebox.showerror("Error", "Archivo no encontrado.")
+    except pd.errors.EmptyDataError:
+        messagebox.showerror("Error", "El archivo está vacío.")
+    except sqlite3.OperationalError:
+        messagebox.showerror("Error", "No se pudo leer la base de datos SQLite.")
+    except ValueError as e:
+        messagebox.showerror("Error", str(e))
+    except Exception as e:
+        messagebox.showerror("Error inesperado", f"Ocurrió un problema:\n{e}")
+    return None
+
+
+
+# Interfaz gráfica (Tkinter)
+
+def abrir_archivo():
+    ruta = filedialog.askopenfilename(
         title="Seleccionar archivo",
         filetypes=[
             ("Archivos soportados", "*.csv *.xls *.xlsx *.sqlite *.db"),
             ("Todos los archivos", "*.*")
         ]
     )
-    if not archivo:
+    if not ruta:
         return
 
-    lbl_ruta.config(text=archivo)
-    try:
-        # Detectar tipo de archivo y cargarlo
-        if archivo.endswith(".csv"):
-            df = pd.read_csv(archivo)
-        elif archivo.endswith((".xls", ".xlsx")):
-            df = pd.read_excel(archivo)
-        elif archivo.endswith((".sqlite", ".db")):
-            conn = sqlite3.connect(archivo)
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-            tablas = [t[0] for t in cursor.fetchall()]
-            if not tablas:
-                raise ValueError("No se encontraron tablas en la base de datos.")
-            tabla = tablas[0]
-            df = pd.read_sql_query(f"SELECT * FROM {tabla}", conn)
-            conn.close()
-        else:
-            raise ValueError("Formato de archivo no soportado.")
+    entrada_texto.config(state="normal")
+    entrada_texto.delete(0, tk.END)
+    entrada_texto.insert(0, ruta)
+    entrada_texto.config(state="readonly")
 
-        mostrar_datos(df)
+    df = load_data(ruta)
+    if df is not None:
+        mostrar_tabla(df)
         messagebox.showinfo("Éxito", "Datos cargados correctamente.")
-    except Exception as e:
-        messagebox.showerror("Error", f"No se pudo cargar el archivo:\n{e}")
 
-def mostrar_datos(df):
-    # Limpiar tabla previa
+def mostrar_tabla(df):
+    # Limpiar tabla anterior
     for col in tree["columns"]:
         tree.heading(col, text="")
     tree.delete(*tree.get_children())
@@ -54,25 +77,25 @@ def mostrar_datos(df):
         tree.heading(col, text=col)
         tree.column(col, width=120, anchor="w")
 
-    # Insertar datos (máximo 1000 filas para mantener fluidez)
-    for i, fila in df.head(1000).iterrows():
+    # Insertar hasta 1000 filas para mantener fluidez
+    for _, fila in df.head(1000).iterrows():
         tree.insert("", "end", values=list(fila))
 
-# ---- Interfaz gráfica ----
+
+# Crear ventana principal
 ventana = tk.Tk()
-ventana.title("Visor de Datasets")
+ventana.title("Visor de Archivos de Datos")
 ventana.geometry("900x600")
 
-frame_top = ttk.Frame(ventana, padding=10)
-frame_top.pack(fill="x")
+# Botón superior
+boton = tk.Button(ventana, text="Abrir archivo", command=lambda: [abrir_archivo()])
+boton.pack(pady=10)
 
-btn_cargar = ttk.Button(frame_top, text="Abrir archivo", command=cargar_archivo)
-btn_cargar.pack(side="left")
+# Cuadro de texto (ruta del archivo)
+entrada_texto = tk.Entry(ventana, width=80, state="readonly")
+entrada_texto.pack(pady=10)
 
-lbl_ruta = ttk.Label(frame_top, text="Ningún archivo seleccionado", width=100, anchor="w")
-lbl_ruta.pack(side="left", padx=10)
-
-# Tabla con scroll
+# Marco para tabla
 frame_tabla = ttk.Frame(ventana)
 frame_tabla.pack(fill="both", expand=True, padx=10, pady=10)
 
