@@ -2,11 +2,8 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 import sqlite3
-import os
-
 
 # Función para cargar archivos
-
 def load_data(file_path):
     try:
         if file_path.endswith(".csv"):
@@ -39,10 +36,7 @@ def load_data(file_path):
         messagebox.showerror("Error inesperado", f"Ocurrió un problema:\n{e}")
     return None
 
-
-
-# Interfaz gráfica (Tkinter)
-
+# Interfaz gráfica
 def abrir_archivo():
     ruta = filedialog.askopenfilename(
         title="Seleccionar archivo",
@@ -81,21 +75,27 @@ def mostrar_tabla(df):
     for _, fila in df.head(1000).iterrows():
         tree.insert("", "end", values=list(fila))
 
-
 # Crear ventana principal
 ventana = tk.Tk()
 ventana.title("Visor de Archivos de Datos")
 ventana.geometry("900x600")
 
-# Botón superior
-boton = tk.Button(ventana, text="Abrir archivo", command=lambda: [abrir_archivo()])
-boton.pack(pady=10)
+# Marco superior con etiqueta, cuadro y botón
+frame_superior = ttk.Frame(ventana)
+frame_superior.pack(pady=10)
 
-# Cuadro de texto (ruta del archivo)
-entrada_texto = tk.Entry(ventana, width=80, state="readonly")
-entrada_texto.pack(pady=10)
+etiqueta_ruta = ttk.Label(frame_superior, text="Ruta:")
+etiqueta_ruta.grid(row=0, column=0, padx=5)
 
-# Marco para tabla
+entrada_texto = tk.Entry(frame_superior, width=70, state="normal", fg="gray")
+entrada_texto.insert(0, "Seleccione el archivo a cargar")
+entrada_texto.config(state="readonly")
+entrada_texto.grid(row=0, column=1, padx=5)
+
+boton = ttk.Button(frame_superior, text="Abrir archivo", command=lambda: [abrir_archivo()])
+boton.grid(row=0, column=2, padx=5)
+
+# Marco para la tabla
 frame_tabla = ttk.Frame(ventana)
 frame_tabla.pack(fill="both", expand=True, padx=10, pady=10)
 
