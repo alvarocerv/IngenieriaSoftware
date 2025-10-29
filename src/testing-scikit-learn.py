@@ -1,10 +1,13 @@
 import pandas as pd 
+import os
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
 #cargar los datos
-data = pd.read_csv("housing.csv")
+script_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(script_dir, "housing.csv")
+data = pd.read_csv(csv_path)
 
 #separar variables independientes (x) y dependiente (y)
 x = data[['median_income', 'total_rooms', 'housing_median_age']]
