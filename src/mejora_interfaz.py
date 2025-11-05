@@ -94,7 +94,7 @@ def finalizar_pasos(df_procesado):
     messagebox.showinfo("Éxito", "Preprocesado completado. La tabla ha sido actualizada.")
 
     # 2. Vuelve a llamar al paso 1 para permitir una nueva selección
-    iniciar_separacion(df_procesado, frame_pasos_container)
+    iniciar_separacion(df_procesado, frame_pasos_container, mostrar_tabla)
 
 
 # --- Función de Carga de Archivo (El Trigger) ---
@@ -166,7 +166,7 @@ frame_tabla.columnconfigure(0, weight=1)
 # --- 3. Marco inferior (Pasos de preprocesado) ---
 frame_pasos_container = ttk.LabelFrame(ventana, text="Pasos de Preprocesado", height=300)
 frame_pasos_container.pack(fill="x", expand=False, padx=10, pady=10)
-frame_pasos_container.propagate(False)
+
 
 # --- Iniciar la App ---
 ventana.mainloop()

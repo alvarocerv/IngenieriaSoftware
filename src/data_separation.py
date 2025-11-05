@@ -8,7 +8,7 @@ train_df = None
 test_df = None
 
 
-def iniciar_separacion(df_procesado, frame_pasos_container, callback=None):
+def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, callback=None):
     """
     Dibuja la interfaz para separación de datos y realiza la separación
     """
@@ -28,14 +28,18 @@ def iniciar_separacion(df_procesado, frame_pasos_container, callback=None):
     # Porcentaje de entrenamiento
     ttk.Label(frame_inputs, text="Porcentaje de Entrenamiento:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
     entry_train_pct = ttk.Entry(frame_inputs, width=10)
-    entry_train_pct.insert(0, "%")  # Valor por defecto
+    entry_train_pct.insert(0, "")  
     entry_train_pct.grid(row=0, column=1, padx=5, pady=5)
+    ttk.Label(frame_inputs, text="").grid(row=0, column=2, padx=0, pady=5, sticky="w")
 
-    # Semilla para reproducibilidad
+    # Test
     ttk.Label(frame_inputs, text="Porcentaje de test :").grid(row=1, column=0, padx=5, pady=5, sticky="w")
     entry_seed = ttk.Entry(frame_inputs, width=10)
-    entry_seed.insert(0, "%")  # Valor por defecto
+    entry_seed.insert(0, "")  
     entry_seed.grid(row=1, column=1, padx=5, pady=5)
+
+    #frame para botones
+    frame_vista = ttk.Frame(frame_pasos_container)
 
     # Función para realizar la separación
     def separar_datos():
@@ -59,7 +63,9 @@ def iniciar_separacion(df_procesado, frame_pasos_container, callback=None):
                                 f"Datos separados correctamente.\n\n"
                                 f"Conjunto de Entrenamiento: {len(train_df)} filas\n"
                                 f"Conjunto de Test: {len(test_df)} filas")
-            
+            #mostrar botones
+            frame_vista.pack(pady=10)
+
             # Llamar al callback si se proporciona (por ejemplo, para el siguiente paso)
             if callback:
                 callback(train_df, test_df)
@@ -69,3 +75,9 @@ def iniciar_separacion(df_procesado, frame_pasos_container, callback=None):
 
     # Botón para separar
     ttk.Button(frame_pasos_container, text="Separar Datos", command=separar_datos).pack(pady=10)
+
+    #botón para ver los conjuntos
+    ttk.Button(frame_vista, text="Ver Conjunto de Entrenamiento", 
+               command=lambda: func_mostrar_tabla(train_df)).pack(side=tk.LEFT, padx=5)
+    ttk.Button(frame_vista, text="Ver Conjunto de Test", 
+               command=lambda: func_mostrar_tabla(test_df)).pack(side=tk.LEFT, padx=5)
