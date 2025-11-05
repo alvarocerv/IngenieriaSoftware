@@ -3,10 +3,12 @@ from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 import sqlite3
 import os
+from sklearn.model_selection import train_test_split
 
 # Importamos las funciones de los otros archivos
 from gui_column_selection import lanzar_selector
 from manejo_inexistentes import manejo_datos_inexistentes
+from data_separation import iniciar_separacion, train_df, test_df
 
 # --- Variables Globales ---
 # Necesitamos que el DF original y el visor de la tabla
@@ -92,7 +94,7 @@ def finalizar_pasos(df_procesado):
     messagebox.showinfo("Éxito", "Preprocesado completado. La tabla ha sido actualizada.")
 
     # 2. Vuelve a llamar al paso 1 para permitir una nueva selección
-    iniciar_paso_1()
+    iniciar_separacion(df_procesado, frame_pasos_container)
 
 
 # --- Función de Carga de Archivo (El Trigger) ---
