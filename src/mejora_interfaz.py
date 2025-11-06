@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from gui_column_selection import lanzar_selector
 from manejo_inexistentes import manejo_datos_inexistentes
 from data_separation import iniciar_separacion, train_df, test_df
-
+from model_creation import iniciar_creacion_modelo
 # --- Variables Globales ---
 # Necesitamos que el DF original y el visor de la tabla
 # sean accesibles por las funciones de control.
@@ -88,17 +88,21 @@ def iniciar_paso_2(df_seleccionado):
 
 
 def finalizar_pasos(df_procesado):
-    """Actualiza la tabla y reinicia el proceso."""
+    """Actualiza la tabla y llama al paso de separación de datos."""
     # 1. Actualiza la tabla de arriba con los datos procesados
     mostrar_tabla(df_procesado)
     messagebox.showinfo("Éxito", "Preprocesado completado. La tabla ha sido actualizada.")
 
-    # 2. Vuelve a llamar al paso 1 para permitir una nueva selección
-    iniciar_separacion(df_procesado, frame_pasos_container, mostrar_tabla)
+    # 2. Define la función que se ejecutará DESPUÉS de la separación (Paso 4)
+    #    Usamos una lambda para pasar los argumentos correctos
+    callback_paso_4 = lambda train_df, test_df: iniciar_creacion_modelo(
+        train_df,
+        test_df,
+        frame_pasos_container
+    )
 
-
-# --- Función de Carga de Archivo (El Trigger) ---
-
+    # 3. Llama al paso de separación (Paso 3) y le pasa el 'callback_paso_4'
+    iniciar_separacion(df_procesado, frame_pasos_container, mostrar_tabla, callback=callback_paso_4)
 def abrir_archivo():
     global df_original
 
