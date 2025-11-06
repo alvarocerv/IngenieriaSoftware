@@ -24,23 +24,41 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
     frame_inputs = ttk.Frame(frame_pasos_container)
     frame_inputs.pack(pady=5)
 
+    train_pct_var = tk.StringVar(value="")
+
+    def actualizar_test_pct(*args):
+        try:
+            train_pct = float(train_pct_var.get())
+            if 0 < train_pct < 100:
+                test_pct = 100 - train_pct
+                label_test_pct.config(text=f"Porcentaje de Test: {test_pct:.1f}%")
+            else:
+                label_test_pct.config(text="Porcentaje de Test: --")
+        except ValueError:
+            label_test_pct.config(text="Porcentaje de Test: --")
+
+    train_pct_var.trace_add("write", actualizar_test_pct)
+
     # Porcentaje de entrenamiento
-    ttk.Label(frame_inputs, text="Porcentaje de Entrenamiento:").grid(row=0, column=0, padx=5, pady=5,
-                                                                               sticky="w")
-    entry_train_pct = ttk.Entry(frame_inputs, width=10)
+    ttk.Label(frame_inputs, text="Porcentaje de Entrenamiento:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+    entry_train_pct = ttk.Entry(frame_inputs, textvariable=train_pct_var, width=10)
     entry_train_pct.insert(0, "")
     entry_train_pct.grid(row=0, column=1, padx=5, pady=5)
+    
 
-    # --- CAMBIO: Semilla Aleatoria (campo vacío por defecto) ---
-    ttk.Label(frame_inputs, text="Porcentaje de Test:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+    # Etiqueta para porcentaje de test 
+    label_test_pct = ttk.Label(frame_inputs, text="Porcentaje de Test: %")  
+    label_test_pct.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="w")
+
+    #semilla
+    ttk.Label(frame_inputs, text="Semilla (para la separación aleatoria):").grid(row=2, column=0, padx=5, pady=5, sticky="w")
     entry_seed = ttk.Entry(frame_inputs, width=10)
-    entry_seed.insert(0, "")
-    entry_seed.grid(row=1, column=1, padx=5, pady=5)
+    entry_seed.insert(0, " ")  
+    entry_seed.grid(row=2, column=1, padx=5, pady=5)
 
     # frame para botones (lo creamos aquí para usarlo luego)
     frame_vista = ttk.Frame(frame_pasos_container)
 
-    # --- INICIO: Función 'separar_datos' MODIFICADA ---
     def separar_datos():
         global train_df, test_df
         try:
@@ -104,9 +122,6 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
         except ValueError as e:
             messagebox.showerror("Error", f"Entrada inválida: {e}")
 
-    # --- FIN: Función 'separar_datos' MODIFICADA ---
-
-    # --- INICIO: Botones (sin cambios) ---
 
     # Botón para separar (Guardamos la referencia en 'btn_separar')
     btn_separar = ttk.Button(frame_pasos_container, text="Separar Datos", command=separar_datos)
@@ -118,4 +133,4 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
     ttk.Button(frame_vista, text="Ver Conjunto de Test",
                command=lambda: func_mostrar_tabla(test_df)).pack(side=tk.LEFT, padx=5)
 
-    # --- FIN: Botones ---
+    
