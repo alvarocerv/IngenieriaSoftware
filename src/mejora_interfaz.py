@@ -8,17 +8,22 @@ from sklearn.model_selection import train_test_split
 # Importamos las funciones de los otros archivos
 from gui_column_selection import lanzar_selector
 from manejo_inexistentes import manejo_datos_inexistentes
-from data_separation import iniciar_separacion, train_df, test_df
-from model_creation import iniciar_creacion_modelo
+from data_separation import iniciar_separacion
+from model_creation import crear_y_mostrar_modelo, dibujar_ui_model_creation
+
 # --- Variables Globales ---
-# Necesitamos que el DF original y el visor de la tabla
-# sean accesibles por las funciones de control.
 df_original = None
 tree = None
 frame_pasos_container = None
+canvas_pasos = None
+df_seleccionado = None
+df_procesado = None
+df_train = None
+df_test = None
+notebook_visor = None
 
 
-# --- Funciones de Carga y Visualización ---
+# --- Funciones de Carga y Visualización (SIN CAMBIOS) ---
 
 def load_data(file_path):
     try:
@@ -46,10 +51,7 @@ def load_data(file_path):
 
 def mostrar_tabla(df):
     global tree
-    # Limpiar tabla anterior
     tree.delete(*tree.get_children())
-
-    # Configurar nuevas columnas
     columnas = list(df.columns)
     tree["columns"] = columnas
     tree.heading("#0", text="", anchor="w")
@@ -59,52 +61,117 @@ def mostrar_tabla(df):
         tree.heading(col, text=col)
         tree.column(col, width=120, anchor="w")
 
-    # Insertar hasta 1000 filas
     for i, fila in df.head(1000).iterrows():
         tree.insert("", "end", values=list(fila))
 
 
-# --- Funciones de Control (El "Pegamento") ---
+# --- Funciones de Scroll y Auxiliares (SIN CAMBIOS) ---
 
-def iniciar_paso_1():
-    """Llama al módulo de selección de columnas."""
-    global df_original, frame_pasos_container
-    if df_original is not None:
-        # Llama a la función del otro archivo, pasándole:
-        # 1. El DataFrame
-        # 2. El marco donde dibujar
-        # 3. La función a la que debe llamar cuando termine (el callback)
-        lanzar_selector(df_original, frame_pasos_container, iniciar_paso_2)
+def on_frame_configure(event=None):
+    """Ajusta la región de scroll cuando el contenido cambia."""
+    global canvas_pasos
+    if canvas_pasos and frame_pasos_container.winfo_children():
+        canvas_pasos.configure(scrollregion=canvas_pasos.bbox("all"))
 
 
-def iniciar_paso_2(df_seleccionado):
-    """Llama al módulo de manejo de inexistentes."""
+def on_canvas_resize(event):
+    """Asegura que el frame_pasos_container tenga el mismo ancho que el canvas."""
     global frame_pasos_container
-    # Llama a la función del otro archivo, pasándole:
-    # 1. El DataFrame seleccionado
-    # 2. El marco donde dibujar
-    # 3. La función a la que debe llamar cuando termine (el callback final)
-    manejo_datos_inexistentes(df_seleccionado, frame_pasos_container, finalizar_pasos)
+    if frame_pasos_container:
+        event.widget.itemconfig(event.widget.winfo_children()[0], width=event.width)
 
 
-def finalizar_pasos(df_procesado):
-    """Actualiza la tabla y llama al paso de separación de datos."""
-    # 1. Actualiza la tabla de arriba con los datos procesados
-    mostrar_tabla(df_procesado)
+# --- Funciones de Flujo (Llamada Secuencial) ---
+
+def iniciar_paso_2():
+    """Crea y dibuja la UI del Paso 2. Mantiene la tabla superior con el DF original."""
+    global df_original, df_seleccionado, canvas_pasos
+
+    # Mantenemos la tabla superior mostrando el DF original
+    mostrar_tabla(df_original.copy())
+
+    frame_paso_2 = ttk.LabelFrame(frame_pasos_container, text="Manejo de Datos Inexistentes", padding="10")
+    frame_paso_2.pack(fill="x", padx=10, pady=10)
+
+    manejo_datos_inexistentes(df_seleccionado, frame_paso_2, iniciar_paso_3)
+
+    frame_pasos_container.update_idletasks()
+    on_frame_configure()
+    canvas_pasos.yview_moveto(1.0)
+
+
+def iniciar_paso_3(df_procesado_local):
+    """Crea y dibuja la UI del Paso 3. CORREGIDO: Vuelve a mostrar el DF original en la tabla."""
+    global canvas_pasos, df_procesado
+
+    df_procesado = df_procesado_local
+
+    # CORRECCIÓN CLAVE: Aunque el procesamiento se hizo sobre las columnas seleccionadas,
+    # la tabla superior debe mostrar el df_original para cumplir con el requerimiento.
+    mostrar_tabla(df_original.copy())
+
     messagebox.showinfo("Éxito", "Preprocesado completado. La tabla ha sido actualizada.")
 
-    # 2. Define la función que se ejecutará DESPUÉS de la separación (Paso 4)
-    #    Usamos una lambda para pasar los argumentos correctos
-    callback_paso_4 = lambda train_df, test_df: iniciar_creacion_modelo(
-        train_df,
-        test_df,
-        frame_pasos_container
-    )
+    frame_paso_3 = ttk.LabelFrame(frame_pasos_container, text="Separación de Datos", padding="10")
+    frame_paso_3.pack(fill="x", padx=10, pady=10)
 
-    # 3. Llama al paso de separación (Paso 3) y le pasa el 'callback_paso_4'
-    iniciar_separacion(df_procesado, frame_pasos_container, mostrar_tabla, callback=callback_paso_4)
+    # El df_procesado_local (con menos columnas, pero limpio) se pasa a la separación.
+    iniciar_separacion(df_procesado, frame_paso_3, mostrar_tabla, iniciar_paso_4)
+
+    frame_pasos_container.update_idletasks()
+    on_frame_configure()
+    canvas_pasos.yview_moveto(1.0)
+
+
+def iniciar_paso_4(train_df_local, test_df_local):
+    """Crea y dibuja la UI del Paso 4 (Descripción del Modelo)."""
+    global canvas_pasos, df_train, df_test, notebook_visor
+
+    df_train = train_df_local
+    df_test = test_df_local
+
+    frame_paso_4 = ttk.LabelFrame(frame_pasos_container, text="Creación y Evaluación del Modelo", padding="10")
+    frame_paso_4.pack(fill="x", padx=10, pady=10)
+
+    dibujar_ui_model_creation(frame_paso_4, df_train, df_test, notebook_visor)
+
+    frame_pasos_container.update_idletasks()
+    on_frame_configure()
+    canvas_pasos.yview_moveto(1.0)
+
+
+def iniciar_flujo_paso_1(df):
+    """Inicia el dibujo del Paso 1, punto de entrada después de cargar los datos."""
+    global df_original, frame_pasos_container, canvas_pasos
+
+    for widget in frame_pasos_container.winfo_children():
+        widget.destroy()
+
+    frame_paso_1 = ttk.LabelFrame(frame_pasos_container, text="Selección de Columnas", padding="10")
+    frame_paso_1.pack(fill="x", padx=10, pady=10)
+
+    # El callback guarda el DF seleccionado y llama al siguiente paso (Paso 2)
+    def callback_paso_1(df_resultante):
+        global df_seleccionado
+        df_seleccionado = df_resultante
+
+        # Mantenemos la tabla mostrando el DF ORIGINAL
+        mostrar_tabla(df_original.copy())
+
+        iniciar_paso_2()
+
+    lanzar_selector(df, frame_paso_1, callback_paso_1)
+
+    frame_pasos_container.update_idletasks()
+    on_frame_configure()
+
+
 def abrir_archivo():
     global df_original
+
+    global notebook_visor
+    for i in range(notebook_visor.index("end") - 1, 0, -1):
+        notebook_visor.forget(i)
 
     ruta = filedialog.askopenfilename(
         title="Seleccionar archivo",
@@ -123,15 +190,15 @@ def abrir_archivo():
 
     df = load_data(ruta)
     if df is not None:
+        # Usamos .copy() para asegurarnos de que el df_original se mantenga inmutable.
         df_original = df.copy()
         mostrar_tabla(df_original)
-        messagebox.showinfo("Éxito", "Datos cargados. Por favor, seleccione las columnas abajo.")
+        messagebox.showinfo("Éxito", "Datos cargados.")
 
-        # Inicia el flujo de preprocesado
-        iniciar_paso_1()
+        iniciar_flujo_paso_1(df_original)
 
 
-# --- Creación de la Ventana Principal ---
+# --- Creación de la Ventana Principal (RESTO DEL CÓDIGO SIN CAMBIOS) ---
 ventana = tk.Tk()
 ventana.title("Visor y Preprocesador de Datos")
 ventana.geometry("900x800")
@@ -151,9 +218,21 @@ entrada_texto.pack(side=tk.LEFT, fill="x", expand=True, padx=5)
 boton = ttk.Button(frame_superior, text="Abrir archivo", command=abrir_archivo)
 boton.pack(side=tk.LEFT, padx=5)
 
-# --- 2. Marco para la tabla (Visor) ---
-frame_tabla = ttk.Frame(ventana)
-frame_tabla.pack(fill="both", expand=True, padx=10, pady=10)
+# -----------------------------------------------------------------
+# --- 2. Marco para la tabla (Notebook/Pestañas) ---
+# -----------------------------------------------------------------
+frame_tabla_notebook = ttk.Frame(ventana)
+frame_tabla_notebook.pack(fill="both", expand=True, padx=10, pady=10)
+
+notebook_visor = ttk.Notebook(frame_tabla_notebook)
+notebook_visor.pack(fill="both", expand=True)
+
+# --- Pestaña 1: Visor de Datos ---
+tab_visor = ttk.Frame(notebook_visor)
+notebook_visor.add(tab_visor, text="Datos Originales/Procesados")
+
+frame_tabla = ttk.Frame(tab_visor)
+frame_tabla.pack(fill="both", expand=True)
 
 tree = ttk.Treeview(frame_tabla, show="headings")
 scroll_y = ttk.Scrollbar(frame_tabla, orient="vertical", command=tree.yview)
@@ -167,10 +246,34 @@ scroll_x.grid(row=1, column=0, sticky="ew")
 frame_tabla.rowconfigure(0, weight=1)
 frame_tabla.columnconfigure(0, weight=1)
 
-# --- 3. Marco inferior (Pasos de preprocesado) ---
-frame_pasos_container = ttk.LabelFrame(ventana, text="Pasos de Preprocesado", height=300)
-frame_pasos_container.pack(fill="x", expand=False, padx=10, pady=10)
+# -------------------------------------------------------------
+# --- 3. Marco inferior (Pasos de preprocesado con SCROLL) ---
+# -------------------------------------------------------------
 
+frame_pasos_wrapper = ttk.Frame(ventana, height=300)
+frame_pasos_wrapper.pack(fill="x", expand=False, padx=10, pady=10)
+
+canvas_pasos = tk.Canvas(frame_pasos_wrapper, bd=0, highlightthickness=0)
+scrollbar_pasos = ttk.Scrollbar(frame_pasos_wrapper, orient="vertical", command=canvas_pasos.yview)
+scroll_x_pasos = ttk.Scrollbar(frame_pasos_wrapper, orient="horizontal", command=canvas_pasos.xview)
+
+scrollbar_pasos.pack(side="right", fill="y")
+scroll_x_pasos.pack(side="bottom", fill="x")
+canvas_pasos.pack(side="left", fill="both", expand=True)
+
+canvas_pasos.configure(yscrollcommand=scrollbar_pasos.set, xscrollcommand=scroll_x_pasos.set)
+
+frame_pasos_container = ttk.Frame(canvas_pasos)
+
+
+def inicializar_canvas_content():
+    canvas_width = canvas_pasos.winfo_width() if canvas_pasos.winfo_width() > 1 else 900
+    canvas_pasos.create_window((0, 0), window=frame_pasos_container, anchor="nw", width=canvas_width)
+    frame_pasos_container.bind("<Configure>", on_frame_configure)
+    canvas_pasos.bind("<Configure>", on_canvas_resize)
+
+
+ventana.after(100, inicializar_canvas_content)
 
 # --- Iniciar la App ---
 ventana.mainloop()

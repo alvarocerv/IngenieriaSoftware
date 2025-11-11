@@ -7,19 +7,10 @@ import numpy as np
 def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
     """
     Construye la UI para manejar datos inexistentes DENTRO
-    del parent_frame dado.
-
-    Args:
-        df (pd.DataFrame): El DataFrame seleccionado (solo las columnas elegidas).
-        parent_frame (tk.Widget): El marco donde se dibujará esta UI.
-        on_apply_callback (function): La función a llamar cuando se confirme,
-                                      pasando el df_procesado.
+    del parent_frame dado (Paso 2).
     """
 
-    # 1. Limpiar el marco por si había algo antes
-    for widget in parent_frame.winfo_children():
-        widget.destroy()
-    parent_frame.config(text="Paso 2: Manejar Datos Inexistentes")
+    # NO limpiamos ni ponemos título.
 
     # --- Detección automática ---
     missing_info = df.isnull().sum()
@@ -27,8 +18,7 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
 
     if missing_cols.empty:
         messagebox.showinfo("Sin datos faltantes", "No se detectaron valores inexistentes en el dataset seleccionado.")
-        # Si no hay nada que hacer, simplemente llamamos al callback
-        # con el dataframe tal cual
+        # Llama al callback para guardar el DF y dibujar el Paso 3
         on_apply_callback(df)
         return
 
@@ -60,12 +50,11 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
     def aplicar_opcion():
         try:
             seleccion = opcion.get()
-            df_result = df.copy()  # Trabajar sobre una copia
+            df_result = df.copy()
 
             if seleccion == "eliminar":
                 df_result.dropna(inplace=True)
             elif seleccion == "media":
-                # Rellenar solo columnas numéricas que están en este DF
                 cols_numericas = df_result.select_dtypes(include=np.number).columns
                 df_result[cols_numericas] = df_result[cols_numericas].fillna(df_result[cols_numericas].mean())
             elif seleccion == "mediana":
@@ -74,13 +63,14 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
             elif seleccion == "constante":
                 valor = simpledialog.askstring("Valor constante", "Introduce el valor con el que deseas rellenar:")
                 if valor is None:
-                    return  # El usuario canceló
+                    return
                 df_result.fillna(valor, inplace=True)
 
-            # Llama a la función 'callback' final que nos pasó la ventana principal
+            # Llama a la función 'callback' que guarda el DF y dibuja el Paso 3
             on_apply_callback(df_result)
 
         except Exception as e:
             messagebox.showerror("Error en preprocesado", f"Ocurrió un problema: {e}")
 
+    # Botón de Aplicar y Finalizar (MANTENER)
     ttk.Button(parent_frame, text="Aplicar y Finalizar", command=aplicar_opcion).pack(pady=15)

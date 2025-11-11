@@ -2,13 +2,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 
-# Nota: Ya no necesita importar 'manejo_inexistentes'
-# La ventana principal se encarga de eso.
-
 def lanzar_selector(df, parent_frame, on_confirm_callback):
     """
-    Construye la UI para seleccionar columnas DENTRO
-    del parent_frame dado.
+    Construye la UI para seleccionar columnas DENTRO del parent_frame dado.
 
     Args:
         df (pd.DataFrame): El DataFrame del que leer las columnas.
@@ -17,13 +13,10 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
                                         pasando el df_seleccionado.
     """
 
-    # 1. Limpiar el marco por si había algo antes
-    for widget in parent_frame.winfo_children():
-        widget.destroy()
-    parent_frame.config(text="Paso 1: Selección de Columnas")
+    # El LabelFrame fue creado en mejora_interfaz.py, solo dibujamos el contenido.
 
     columns = list(df.columns)
-    regression_type = "multiple"  # "simple" o "multiple"
+    regression_type = "multiple"
 
     def confirmar_seleccion():
         entradas = []
@@ -46,14 +39,14 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
             messagebox.showerror("Error", "La columna de salida no puede ser la misma que una de entrada.")
             return
 
-        # Solo usar las columnas seleccionadas
         columnas_usadas = entradas + [salida]
-        df_seleccionado = df[columnas_usadas].copy()  # Usar .copy() para evitar SettingWithCopyWarning
+        df_seleccionado = df[columnas_usadas].copy()
 
-        # Llama a la función 'callback' que nos pasó la ventana principal
+        # Llama a la función 'callback' que dibuja el Paso 2
         on_confirm_callback(df_seleccionado)
 
-    # Contenedor para Checkbuttons con scroll
+        # Contenedor para Checkbuttons con scroll
+
     tk.Label(parent_frame, text="Selecciona columnas de entrada:", font=("Arial", 11, "bold")).pack(pady=(10, 0))
 
     frame_canvas = ttk.Frame(parent_frame, height=100)
@@ -91,6 +84,6 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
     salida_menu = ttk.OptionMenu(parent_frame, salida_var, "Seleccionar...", *columns)
     salida_menu.pack(pady=5)
 
-    # Botón de confirmación
+    # Botón de confirmación (MANTENER)
     confirm_btn = ttk.Button(parent_frame, text="Confirmar y continuar", command=confirmar_seleccion)
     confirm_btn.pack(pady=10)
