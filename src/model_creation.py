@@ -9,7 +9,7 @@ import json
 import os
 
 
-def crear_y_mostrar_modelo(train_df, test_df, txt_descripcion, notebook_visor):
+def crear_y_mostrar_modelo(train_df, test_df, parent_frame, txt_descripcion, notebook_visor, guardar_callback=None):
     """
     Función que ejecuta el cálculo del modelo y crea una nueva pestaña de resultados.
     """
@@ -43,20 +43,6 @@ def crear_y_mostrar_modelo(train_df, test_df, txt_descripcion, notebook_visor):
         for i, col in enumerate(input_cols):
             formula_str += f"({model.coef_[i]:.4f} * {col}) + "
         formula_str += f"({model.intercept_:.4f})"
-
-        # --- Guardar información del modelo (sin cambios) ---
-        info_modelo = {
-            "descripcion": descripcion,
-            "formula": formula_str,
-            "r2_train": r2_train,
-            "r2_test": r2_test,
-            "ecm_train": ecm_train,
-            "ecm_test": ecm_test
-        }
-        os.makedirs("modelos_guardados", exist_ok=True)
-        ruta_guardado = os.path.join("modelos_guardados", "modelo_info.json")
-        with open(ruta_guardado, "w", encoding="utf-8") as f:
-            json.dump(info_modelo, f, indent=4, ensure_ascii=False)
 
         # ------------------------------------------------------------------
         # --- IMPLEMENTACIÓN DE NUEVA PESTAÑA ---
@@ -119,15 +105,31 @@ def crear_y_mostrar_modelo(train_df, test_df, txt_descripcion, notebook_visor):
             ttk.Label(frame_resultado,
                       text="No se puede graficar porque el modelo tiene múltiples variables de entrada.").pack(pady=20)
 
+        # --- Botón para guardar modelo ---
+        if guardar_callback:
+            metricas = {
+                "r2_train": r2_train,
+                "r2_test": r2_test,
+                "ecm_train": ecm_train,
+                "ecm_test": ecm_test
+            }
+
+            ttk.Button(
+                parent_frame,
+                text="Guardar Modelo",
+                command=lambda: guardar_callback(model, input_cols, output_col, descripcion, metricas)
+            ).pack(pady=15)
+
+        
         # Feedback
-        messagebox.showinfo("Proceso Completado", f"Modelo guardado en:\n{ruta_guardado}")
+        messagebox.showinfo("Proceso Completado", "El modelo fue creado correctamente. Usa el botón 'Guardar Modelo' para almacenarlo.")
 
     except Exception as e:
         messagebox.showerror("Error en Creación de Modelo", f"Ocurrió un error:\n{e}")
 
 
 # Esta función se llama desde mejora_interfaz.py para DIBUJAR la UI en el scroll
-def dibujar_ui_model_creation(parent_frame, train_df, test_df, notebook_visor):
+def dibujar_ui_model_creation(parent_frame, train_df, test_df, notebook_visor, guardar_callback=None):
     """
     Dibuja la interfaz de descripción y el botón 'Crear Modelo' en el área de scroll.
     """
@@ -142,5 +144,6 @@ def dibujar_ui_model_creation(parent_frame, train_df, test_df, notebook_visor):
         parent_frame,
         text="Crear Modelo",
         # Al presionar, llama a la función de cálculo y le pasa el notebook
-        command=lambda: crear_y_mostrar_modelo(train_df, test_df, txt_descripcion, notebook_visor)
-    ).pack(pady=10)
+        command=lambda: crear_y_mostrar_modelo(
+            train_df, test_df, parent_frame, txt_descripcion, notebook_visor, guardar_callback)
+            ).pack(pady=10)

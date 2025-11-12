@@ -1,10 +1,10 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, Tk
 import pandas as pd
 import sqlite3
 import os
 from sklearn.model_selection import train_test_split
-
+import json
 # Importamos las funciones de los otros archivos
 from gui_column_selection import lanzar_selector
 from manejo_inexistentes import manejo_datos_inexistentes
@@ -133,7 +133,7 @@ def iniciar_paso_4(train_df_local, test_df_local):
     frame_paso_4 = ttk.LabelFrame(frame_pasos_container, text="Creación y Evaluación del Modelo", padding="10")
     frame_paso_4.pack(fill="x", padx=10, pady=10)
 
-    dibujar_ui_model_creation(frame_paso_4, df_train, df_test, notebook_visor)
+    dibujar_ui_model_creation(frame_paso_4, df_train, df_test, notebook_visor, guardar_callback=guardar_modelo)
 
     frame_pasos_container.update_idletasks()
     on_frame_configure()
@@ -164,6 +164,72 @@ def iniciar_flujo_paso_1(df):
 
     frame_pasos_container.update_idletasks()
     on_frame_configure()
+
+# Guardado de modelo
+
+def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
+    """
+    Permite al usuario guardar un modelo de regresión lineal y su información asociada.
+    - Muestra un diálogo de selección de archivo (permite elegir nombre, carpeta y tipo).
+    - Guarda la fórmula, columnas, métricas y descripción.
+    - No guarda los datos ni los gráficos.
+    - Notifica éxito o error.
+    """
+    try:
+        # Crear una ventana raíz temporal (necesario para entornos sin root activo)
+        root = Tk()
+        root.withdraw()
+
+        # Mostrar diálogo de guardado
+        file_path = filedialog.asksaveasfilename(
+            parent=root,
+            title="Guardar Modelo",
+            initialdir=".",
+            defaultextension=".json",
+            filetypes=[
+                ("Archivo JSON", "*.json"),
+                ("Todos los archivos", "*.*")
+            ]
+        )
+
+        root.destroy()  # cerrar ventana auxiliar
+
+        if not file_path:
+            messagebox.showinfo("Guardado cancelado", "El guardado fue cancelado por el usuario.")
+            return
+
+        # Crear fórmula
+        formula = f"{output_col} = " + " + ".join(
+            [f"({coef:.6f} * {col})" for coef, col in zip(modelo.coef_, input_cols)]
+        ) + f" + ({modelo.intercept_:.6f})"
+
+        # Preparar información
+        info_modelo = {
+            "descripcion": descripcion,
+            "entradas": input_cols,
+            "salida": output_col,
+            "formula": formula,
+            "coeficientes": [float(coef) for coef in modelo.coef_],
+            "intercepto": float(modelo.intercept_),
+            "metricas": metricas
+        }
+
+        paquete = {
+            "modelo": modelo,
+            "informacion": info_modelo
+        }
+
+        # Guardar modelo
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(info_modelo, f, indent=4, ensure_ascii=False)
+        # Confirmación
+        messagebox.showinfo(
+            "Modelo guardado",
+            f"El modelo se guardó correctamente en:\n\n{file_path}"
+        )
+
+    except Exception as e:
+        messagebox.showerror("Error al guardar", f"Ocurrió un error al guardar el modelo:\n\n{e}")
 
 
 def abrir_archivo():
