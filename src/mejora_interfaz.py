@@ -124,6 +124,92 @@ def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
 
 
 # ================================================================
+# recuperar modelo
+# ================================================================
+
+def cargar_modelo():
+    global notebook_visor, frame_pasos_container, df_original
+
+    ruta = filedialog.askopenfilename(
+        title="Cargar Modelo",
+        filetypes=[("Modelo JSON", "*.json"), ("Todos los archivos", "*.*")]
+    )
+    if not ruta:
+        return
+
+    try:
+        with open(ruta, "r", encoding="utf-8") as f:
+            info = json.load(f)
+    except Exception as e:
+        messagebox.showerror("Error", f"El archivo no es válido o está corrupto:\n{e}")
+        return
+
+    # Validación mínima
+    campos_requeridos = ["descripcion", "entradas", "salida", "formula",
+                         "coeficientes", "intercepto", "metricas"]
+
+    if not all(c in info for c in campos_requeridos):
+        messagebox.showerror("Modelo inválido",
+                             "El archivo no contiene los datos requeridos para un modelo válido.")
+        return
+
+    # Ocultar flujo inferior
+    for widget in frame_pasos_container.winfo_children():
+        widget.destroy()
+
+    # Eliminar pestañas excepto Datos
+    for i in range(notebook_visor.index("end") - 1, 0, -1):
+        notebook_visor.forget(i)
+
+    # Crear pestaña Modelo Cargado
+    tab_modelo = ttk.Frame(notebook_visor)
+    notebook_visor.add(tab_modelo, text="Modelo Cargado")
+    notebook_visor.select(tab_modelo)
+
+    # Contenedor
+    frame = ttk.Frame(tab_modelo, padding=15)
+    frame.pack(fill="both", expand=True)
+
+    ttk.Label(frame, text="Modelo Recuperado", font=("Arial", 14, "bold")).pack(pady=10)
+
+    # Descripción
+    ttk.Label(frame, text="Descripción:", font=("Arial", 11, "bold")).pack(anchor="w")
+    ttk.Label(frame, text=info["descripcion"], wraplength=800).pack(anchor="w", pady=(0,10))
+
+    # Fórmula
+    ttk.Label(frame, text="Fórmula:", font=("Arial", 11, "bold")).pack(anchor="w")
+    ttk.Label(frame, text=info["formula"], wraplength=800).pack(anchor="w", pady=(0,10))
+
+    # Coeficientes
+    ttk.Label(frame, text="Coeficientes:", font=("Arial", 11, "bold")).pack(anchor="w")
+    for col, c in zip(info["entradas"], info["coeficientes"]):
+        ttk.Label(frame, text=f"{col}: {c:.6f}").pack(anchor="w")
+
+    ttk.Label(frame, text=f"Intercepto: {info['intercepto']:.6f}").pack(anchor="w", pady=(0,10))
+
+    # Métricas
+    ttk.Label(frame, text="Métricas:", font=("Arial", 11, "bold")).pack(anchor="w")
+
+    metricas = info["metricas"]
+    cols = ("Métrica", "Entrenamiento", "Test")
+
+    tree_metrics = ttk.Treeview(frame, columns=cols, show="headings", height=2)
+    for col in cols:
+        tree_metrics.heading(col, text=col)
+        tree_metrics.column(col, width=200, anchor="center")
+
+    tree_metrics.insert("", "end", values=("R²",
+                                           f"{metricas['r2_train']:.4f}",
+                                           f"{metricas['r2_test']:.4f}"))
+    tree_metrics.insert("", "end", values=("ECM",
+                                           f"{metricas['ecm_train']:.4f}",
+                                           f"{metricas['ecm_test']:.4f}"))
+    tree_metrics.pack(pady=10)
+
+    # Confirmación
+    messagebox.showinfo("Modelo cargado", "El modelo fue recuperado exitosamente.")
+
+# ================================================================
 # Flujo de pasos
 # ================================================================
 def iniciar_flujo_paso_1(df):
@@ -229,6 +315,9 @@ entrada_texto.pack(side="left", fill="x", expand=True, padx=5)
 
 boton = ttk.Button(frame_superior, text="Abrir archivo", command=abrir_archivo)
 boton.pack(side="left", padx=5)
+
+boton_cargar_modelo = ttk.Button(frame_superior, text="Cargar Modelo", command=cargar_modelo)
+boton_cargar_modelo.pack(side="left", padx=5)
 
 # Notebook principal
 frame_tabla_notebook = ttk.Frame(ventana)
