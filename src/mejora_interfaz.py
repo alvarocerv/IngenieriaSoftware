@@ -1,17 +1,17 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, Tk
+from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 import sqlite3
-import os
 from sklearn.model_selection import train_test_split
 import json
-# Importamos las funciones de los otros archivos
+
+# Importamos funciones externas
 from gui_column_selection import lanzar_selector
 from manejo_inexistentes import manejo_datos_inexistentes
 from data_separation import iniciar_separacion
-from model_creation import crear_y_mostrar_modelo, dibujar_ui_model_creation
+from model_creation import dibujar_ui_model_creation
 
-# --- Variables Globales ---
+# --- Variables globales ---
 df_original = None
 tree = None
 frame_pasos_container = None
@@ -23,8 +23,9 @@ df_test = None
 notebook_visor = None
 
 
-# --- Funciones de Carga y Visualización (SIN CAMBIOS) ---
-
+# ================================================================
+# Funciones de carga y visualización
+# ================================================================
 def load_data(file_path):
     try:
         if file_path.endswith(".csv"):
@@ -54,197 +55,143 @@ def mostrar_tabla(df):
     tree.delete(*tree.get_children())
     columnas = list(df.columns)
     tree["columns"] = columnas
-    tree.heading("#0", text="", anchor="w")
+    tree.heading("#0", text="")
     tree.column("#0", width=0, stretch=tk.NO)
-
     for col in columnas:
         tree.heading(col, text=col)
         tree.column(col, width=120, anchor="w")
-
-    for i, fila in df.head(1000).iterrows():
+    for _, fila in df.head(1000).iterrows():
         tree.insert("", "end", values=list(fila))
 
 
-# --- Funciones de Scroll y Auxiliares (SIN CAMBIOS) ---
-
+# ================================================================
+# Scroll del panel inferior
+# ================================================================
 def on_frame_configure(event=None):
-    """Ajusta la región de scroll cuando el contenido cambia."""
-    global canvas_pasos
     if canvas_pasos and frame_pasos_container.winfo_children():
         canvas_pasos.configure(scrollregion=canvas_pasos.bbox("all"))
 
 
 def on_canvas_resize(event):
-    """Asegura que el frame_pasos_container tenga el mismo ancho que el canvas."""
-    global frame_pasos_container
     if frame_pasos_container:
-        event.widget.itemconfig(event.widget.winfo_children()[0], width=event.width)
+        canvas_pasos.itemconfig(frame_pasos_container_id, width=event.width)
 
 
-# --- Funciones de Flujo (Llamada Secuencial) ---
-
-def iniciar_paso_2():
-    """Crea y dibuja la UI del Paso 2. Mantiene la tabla superior con el DF original."""
-    global df_original, df_seleccionado, canvas_pasos
-
-    # Mantenemos la tabla superior mostrando el DF original
-    mostrar_tabla(df_original.copy())
-
-    frame_paso_2 = ttk.LabelFrame(frame_pasos_container, text="Manejo de Datos Inexistentes", padding="10")
-    frame_paso_2.pack(fill="x", padx=10, pady=10)
-
-    manejo_datos_inexistentes(df_seleccionado, frame_paso_2, iniciar_paso_3)
-
-    frame_pasos_container.update_idletasks()
-    on_frame_configure()
-    canvas_pasos.yview_moveto(1.0)
+def _on_mousewheel(event):
+    canvas_pasos.yview_scroll(int(-1*(event.delta/120)), "units")
 
 
-def iniciar_paso_3(df_procesado_local):
-    """Crea y dibuja la UI del Paso 3. CORREGIDO: Vuelve a mostrar el DF original en la tabla."""
-    global canvas_pasos, df_procesado
-
-    df_procesado = df_procesado_local
-
-    # CORRECCIÓN CLAVE: Aunque el procesamiento se hizo sobre las columnas seleccionadas,
-    # la tabla superior debe mostrar el df_original para cumplir con el requerimiento.
-    mostrar_tabla(df_original.copy())
-
-    messagebox.showinfo("Éxito", "Preprocesado completado. La tabla ha sido actualizada.")
-
-    frame_paso_3 = ttk.LabelFrame(frame_pasos_container, text="Separación de Datos", padding="10")
-    frame_paso_3.pack(fill="x", padx=10, pady=10)
-
-    # El df_procesado_local (con menos columnas, pero limpio) se pasa a la separación.
-    iniciar_separacion(df_procesado, frame_paso_3, mostrar_tabla, iniciar_paso_4)
-
-    frame_pasos_container.update_idletasks()
-    on_frame_configure()
-    canvas_pasos.yview_moveto(1.0)
-
-
-def iniciar_paso_4(train_df_local, test_df_local):
-    """Crea y dibuja la UI del Paso 4 (Descripción del Modelo)."""
-    global canvas_pasos, df_train, df_test, notebook_visor
-
-    df_train = train_df_local
-    df_test = test_df_local
-
-    frame_paso_4 = ttk.LabelFrame(frame_pasos_container, text="Creación y Evaluación del Modelo", padding="10")
-    frame_paso_4.pack(fill="x", padx=10, pady=10)
-
-    dibujar_ui_model_creation(frame_paso_4, df_train, df_test, notebook_visor, guardar_callback=guardar_modelo)
-
-    frame_pasos_container.update_idletasks()
-    on_frame_configure()
-    canvas_pasos.yview_moveto(1.0)
-
-
-def iniciar_flujo_paso_1(df):
-    """Inicia el dibujo del Paso 1, punto de entrada después de cargar los datos."""
-    global df_original, frame_pasos_container, canvas_pasos
-
-    for widget in frame_pasos_container.winfo_children():
-        widget.destroy()
-
-    frame_paso_1 = ttk.LabelFrame(frame_pasos_container, text="Selección de Columnas", padding="10")
-    frame_paso_1.pack(fill="x", padx=10, pady=10)
-
-    # El callback guarda el DF seleccionado y llama al siguiente paso (Paso 2)
-    def callback_paso_1(df_resultante):
-        global df_seleccionado
-        df_seleccionado = df_resultante
-
-        # Mantenemos la tabla mostrando el DF ORIGINAL
-        mostrar_tabla(df_original.copy())
-
-        iniciar_paso_2()
-
-    lanzar_selector(df, frame_paso_1, callback_paso_1)
-
-    frame_pasos_container.update_idletasks()
-    on_frame_configure()
-
-# Guardado de modelo
-
+# ================================================================
+# Guardar modelo
+# ================================================================
 def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
-    """
-    Permite al usuario guardar un modelo de regresión lineal y su información asociada.
-    - Muestra un diálogo de selección de archivo (permite elegir nombre, carpeta y tipo).
-    - Guarda la fórmula, columnas, métricas y descripción.
-    - No guarda los datos ni los gráficos.
-    - Notifica éxito o error.
-    """
     try:
-        # Crear una ventana raíz temporal (necesario para entornos sin root activo)
-        root = Tk()
+        root = tk.Tk()
         root.withdraw()
-
-        # Mostrar diálogo de guardado
         file_path = filedialog.asksaveasfilename(
             parent=root,
             title="Guardar Modelo",
             initialdir=".",
             defaultextension=".json",
-            filetypes=[
-                ("Archivo JSON", "*.json"),
-                ("Todos los archivos", "*.*")
-            ]
+            filetypes=[("Archivo JSON", "*.json"), ("Todos los archivos", "*.*")]
         )
-
-        root.destroy()  # cerrar ventana auxiliar
-
+        root.destroy()
         if not file_path:
-            messagebox.showinfo("Guardado cancelado", "El guardado fue cancelado por el usuario.")
+            messagebox.showinfo("Guardado cancelado", "El guardado fue cancelado.")
             return
 
-        # Crear fórmula
         formula = f"{output_col} = " + " + ".join(
             [f"({coef:.6f} * {col})" for coef, col in zip(modelo.coef_, input_cols)]
         ) + f" + ({modelo.intercept_:.6f})"
 
-        # Preparar información
         info_modelo = {
             "descripcion": descripcion,
             "entradas": input_cols,
             "salida": output_col,
             "formula": formula,
-            "coeficientes": [float(coef) for coef in modelo.coef_],
+            "coeficientes": [float(c) for c in modelo.coef_],
             "intercepto": float(modelo.intercept_),
             "metricas": metricas
         }
 
-        paquete = {
-            "modelo": modelo,
-            "informacion": info_modelo
-        }
-
-        # Guardar modelo
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(info_modelo, f, indent=4, ensure_ascii=False)
-        # Confirmación
-        messagebox.showinfo(
-            "Modelo guardado",
-            f"El modelo se guardó correctamente en:\n\n{file_path}"
-        )
+
+        messagebox.showinfo("Modelo guardado", f"Guardado correctamente en:\n{file_path}")
 
     except Exception as e:
-        messagebox.showerror("Error al guardar", f"Ocurrió un error al guardar el modelo:\n\n{e}")
+        messagebox.showerror("Error al guardar", f"Ocurrió un error:\n{e}")
 
 
+# ================================================================
+# Flujo de pasos
+# ================================================================
+def iniciar_flujo_paso_1(df):
+    global df_seleccionado, frame_pasos_container
+    for widget in frame_pasos_container.winfo_children():
+        widget.destroy()
+
+    frame_paso_1 = ttk.LabelFrame(frame_pasos_container, text="Selección de Columnas", padding=10)
+    frame_paso_1.pack(fill="x", padx=10, pady=10)
+
+    def callback(df_resultante):
+        global df_seleccionado
+        df_seleccionado = df_resultante
+        mostrar_tabla(df_original.copy())
+        iniciar_paso_2()
+
+    lanzar_selector(df, frame_paso_1, callback)
+    frame_pasos_container.update_idletasks()
+    on_frame_configure()
+
+
+def iniciar_paso_2():
+    global df_seleccionado
+    mostrar_tabla(df_original.copy())
+
+    frame_paso_2 = ttk.LabelFrame(frame_pasos_container, text="Manejo de Datos Inexistentes", padding=10)
+    frame_paso_2.pack(fill="x", padx=10, pady=10)
+
+    manejo_datos_inexistentes(df_seleccionado, frame_paso_2, iniciar_paso_3)
+    frame_pasos_container.update_idletasks()
+    on_frame_configure()
+
+
+def iniciar_paso_3(df_procesado_local):
+    global df_procesado
+    df_procesado = df_procesado_local
+
+    mostrar_tabla(df_original.copy())
+    messagebox.showinfo("Éxito", "Preprocesado completado.")
+
+    frame_paso_3 = ttk.LabelFrame(frame_pasos_container, text="Separación de Datos", padding=10)
+    frame_paso_3.pack(fill="x", padx=10, pady=10)
+
+    iniciar_separacion(df_procesado, frame_paso_3, mostrar_tabla, iniciar_paso_4)
+    frame_pasos_container.update_idletasks()
+    on_frame_configure()
+
+
+def iniciar_paso_4(train_df_local, test_df_local):
+    global df_train, df_test, notebook_visor
+    df_train = train_df_local
+    df_test = test_df_local
+
+    # Crear pestaña nueva para el modelo
+    dibujar_ui_model_creation(notebook_visor, df_train, df_test, guardar_modelo)
+
+
+# ================================================================
+# Función para abrir archivo
+# ================================================================
 def abrir_archivo():
-    global df_original
-
-    global notebook_visor
+    global df_original, notebook_visor, entrada_texto
     for i in range(notebook_visor.index("end") - 1, 0, -1):
         notebook_visor.forget(i)
 
     ruta = filedialog.askopenfilename(
         title="Seleccionar archivo",
-        filetypes=[
-            ("Archivos soportados", "*.csv *.xls *.xlsx *.sqlite *.db"),
-            ("Todos los archivos", ".")
-        ]
+        filetypes=[("Archivos soportados", "*.csv *.xls *.xlsx *.sqlite *.db"), ("Todos los archivos", "*.*")]
     )
     if not ruta:
         return
@@ -256,44 +203,41 @@ def abrir_archivo():
 
     df = load_data(ruta)
     if df is not None:
-        # Usamos .copy() para asegurarnos de que el df_original se mantenga inmutable.
         df_original = df.copy()
         mostrar_tabla(df_original)
         messagebox.showinfo("Éxito", "Datos cargados.")
-
         iniciar_flujo_paso_1(df_original)
 
 
-# --- Creación de la Ventana Principal (RESTO DEL CÓDIGO SIN CAMBIOS) ---
+# ================================================================
+# Ventana principal
+# ================================================================
 ventana = tk.Tk()
 ventana.title("Visor y Preprocesador de Datos")
 ventana.geometry("900x800")
 
-# --- 1. Marco superior (Carga de archivo) ---
+# Carga de archivo
 frame_superior = ttk.Frame(ventana)
 frame_superior.pack(pady=10, fill="x", padx=10)
 
 etiqueta_ruta = ttk.Label(frame_superior, text="Ruta:")
-etiqueta_ruta.pack(side=tk.LEFT, padx=5)
+etiqueta_ruta.pack(side="left", padx=5)
 
-entrada_texto = tk.Entry(frame_superior, state="normal", fg="gray")
+entrada_texto = tk.Entry(frame_superior, state="readonly", fg="gray")
 entrada_texto.insert(0, "Seleccione el archivo a cargar")
-entrada_texto.config(state="readonly")
-entrada_texto.pack(side=tk.LEFT, fill="x", expand=True, padx=5)
+entrada_texto.pack(side="left", fill="x", expand=True, padx=5)
 
 boton = ttk.Button(frame_superior, text="Abrir archivo", command=abrir_archivo)
-boton.pack(side=tk.LEFT, padx=5)
+boton.pack(side="left", padx=5)
 
-# -----------------------------------------------------------------
-# --- 2. Marco para la tabla (Notebook/Pestañas) ---
-# -----------------------------------------------------------------
+# Notebook principal
 frame_tabla_notebook = ttk.Frame(ventana)
 frame_tabla_notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
 notebook_visor = ttk.Notebook(frame_tabla_notebook)
 notebook_visor.pack(fill="both", expand=True)
 
-# --- Pestaña 1: Visor de Datos ---
+# Pestaña de datos
 tab_visor = ttk.Frame(notebook_visor)
 notebook_visor.add(tab_visor, text="Datos Originales/Procesados")
 
@@ -304,18 +248,13 @@ tree = ttk.Treeview(frame_tabla, show="headings")
 scroll_y = ttk.Scrollbar(frame_tabla, orient="vertical", command=tree.yview)
 scroll_x = ttk.Scrollbar(frame_tabla, orient="horizontal", command=tree.xview)
 tree.configure(yscroll=scroll_y.set, xscroll=scroll_x.set)
-
 tree.grid(row=0, column=0, sticky="nsew")
 scroll_y.grid(row=0, column=1, sticky="ns")
 scroll_x.grid(row=1, column=0, sticky="ew")
-
 frame_tabla.rowconfigure(0, weight=1)
 frame_tabla.columnconfigure(0, weight=1)
 
-# -------------------------------------------------------------
-# --- 3. Marco inferior (Pasos de preprocesado con SCROLL) ---
-# -------------------------------------------------------------
-
+# Panel inferior scrollable
 frame_pasos_wrapper = ttk.Frame(ventana, height=300)
 frame_pasos_wrapper.pack(fill="x", expand=False, padx=10, pady=10)
 
@@ -330,16 +269,10 @@ canvas_pasos.pack(side="left", fill="both", expand=True)
 canvas_pasos.configure(yscrollcommand=scrollbar_pasos.set, xscrollcommand=scroll_x_pasos.set)
 
 frame_pasos_container = ttk.Frame(canvas_pasos)
+frame_pasos_container_id = canvas_pasos.create_window((0, 0), window=frame_pasos_container, anchor="nw", width=900)
 
+frame_pasos_container.bind("<Configure>", on_frame_configure)
+canvas_pasos.bind("<Configure>", on_canvas_resize)
+canvas_pasos.bind_all("<MouseWheel>", _on_mousewheel)
 
-def inicializar_canvas_content():
-    canvas_width = canvas_pasos.winfo_width() if canvas_pasos.winfo_width() > 1 else 900
-    canvas_pasos.create_window((0, 0), window=frame_pasos_container, anchor="nw", width=canvas_width)
-    frame_pasos_container.bind("<Configure>", on_frame_configure)
-    canvas_pasos.bind("<Configure>", on_canvas_resize)
-
-
-ventana.after(100, inicializar_canvas_content)
-
-# --- Iniciar la App ---
 ventana.mainloop()
