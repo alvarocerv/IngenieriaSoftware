@@ -2,10 +2,9 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 import sqlite3
-from sklearn.model_selection import train_test_split
 import json
 
-# Importamos funciones externas
+# Importamos funciones externas (archivos provistos más abajo)
 from gui_column_selection import lanzar_selector
 from manejo_inexistentes import manejo_datos_inexistentes
 from data_separation import iniciar_separacion
@@ -21,7 +20,7 @@ df_procesado = None
 df_train = None
 df_test = None
 notebook_visor = None
-
+frame_pasos_wrapper = None
 
 # ================================================================
 # Funciones de carga y visualización
@@ -65,20 +64,24 @@ def mostrar_tabla(df):
 
 
 # ================================================================
-# Scroll del panel inferior
+# Scroll del panel inferior (se mantiene para el canvas container)
 # ================================================================
 def on_frame_configure(event=None):
+    global canvas_pasos, frame_pasos_container
     if canvas_pasos and frame_pasos_container.winfo_children():
         canvas_pasos.configure(scrollregion=canvas_pasos.bbox("all"))
 
 
 def on_canvas_resize(event):
+    global canvas_pasos, frame_pasos_container_id, frame_pasos_container
     if frame_pasos_container:
         canvas_pasos.itemconfig(frame_pasos_container_id, width=event.width)
 
 
 def _on_mousewheel(event):
-    canvas_pasos.yview_scroll(int(-1*(event.delta/120)), "units")
+    # En el panel inferior, si está visible, se puede desplazar con la rueda
+    if canvas_pasos and frame_pasos_container.winfo_ismapped():
+        canvas_pasos.yview_scroll(int(-1*(event.delta/120)), "units")
 
 
 # ================================================================
@@ -126,9 +129,8 @@ def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
 # ================================================================
 # recuperar modelo
 # ================================================================
-
 def cargar_modelo():
-    global notebook_visor, frame_pasos_container, df_original
+    global notebook_visor, frame_pasos_container, df_original, frame_pasos_wrapper
 
     ruta = filedialog.askopenfilename(
         title="Cargar Modelo",
@@ -153,9 +155,11 @@ def cargar_modelo():
                              "El archivo no contiene los datos requeridos para un modelo válido.")
         return
 
-    # Ocultar flujo inferior
-    for widget in frame_pasos_container.winfo_children():
-        widget.destroy()
+    # Ocultar flujo inferior (para que no se vea debajo)
+    try:
+        frame_pasos_wrapper.pack_forget()
+    except Exception:
+        pass
 
     # Eliminar pestañas excepto Datos
     for i in range(notebook_visor.index("end") - 1, 0, -1):
@@ -209,6 +213,7 @@ def cargar_modelo():
     # Confirmación
     messagebox.showinfo("Modelo cargado", "El modelo fue recuperado exitosamente.")
 
+
 # ================================================================
 # Flujo de pasos
 # ================================================================
@@ -259,11 +264,17 @@ def iniciar_paso_3(df_procesado_local):
 
 
 def iniciar_paso_4(train_df_local, test_df_local):
-    global df_train, df_test, notebook_visor
+    global df_train, df_test, notebook_visor, frame_pasos_wrapper
+
     df_train = train_df_local
     df_test = test_df_local
 
-    # Crear pestaña nueva para el modelo
+    # OCULTAR EL PANEL INFERIOR para que no se vea por debajo de la pestaña Modelo
+    try:
+        frame_pasos_wrapper.pack_forget()
+    except Exception:
+        pass
+
     dibujar_ui_model_creation(notebook_visor, df_train, df_test, guardar_modelo)
 
 
@@ -271,7 +282,14 @@ def iniciar_paso_4(train_df_local, test_df_local):
 # Función para abrir archivo
 # ================================================================
 def abrir_archivo():
-    global df_original, notebook_visor, entrada_texto
+    global df_original, notebook_visor, entrada_texto, frame_pasos_wrapper
+
+    # Asegurarse de que el panel inferior esté visible al empezar nuevo flujo
+    try:
+        frame_pasos_wrapper.pack(fill="x", expand=False, padx=10, pady=10)
+    except Exception:
+        pass
+
     for i in range(notebook_visor.index("end") - 1, 0, -1):
         notebook_visor.forget(i)
 
@@ -285,7 +303,7 @@ def abrir_archivo():
     entrada_texto.config(state="normal")
     entrada_texto.delete(0, tk.END)
     entrada_texto.insert(0, ruta)
-    entrada_texto.config(state="readonly")
+    entrada_texto.config(state="readonly", disabledforeground="black")
 
     df = load_data(ruta)
     if df is not None:
@@ -309,8 +327,25 @@ frame_superior.pack(pady=10, fill="x", padx=10)
 etiqueta_ruta = ttk.Label(frame_superior, text="Ruta:")
 etiqueta_ruta.pack(side="left", padx=5)
 
-entrada_texto = tk.Entry(frame_superior, state="readonly", fg="gray")
-entrada_texto.insert(0, "Seleccione el archivo a cargar")
+# --- ENTRY con placeholder ---
+entrada_texto = tk.Entry(frame_superior, fg="gray")
+placeholder = "Seleccione el archivo a cargar"
+entrada_texto.insert(0, placeholder)
+
+def limpiar_placeholder(event):
+    if entrada_texto.get() == placeholder:
+        entrada_texto.delete(0, tk.END)
+        entrada_texto.config(fg="black", state="normal")
+
+def restaurar_placeholder(event):
+    if entrada_texto.get().strip() == "":
+        entrada_texto.config(state="normal")
+        entrada_texto.delete(0, tk.END)
+        entrada_texto.insert(0, placeholder)
+        entrada_texto.config(fg="gray")
+
+entrada_texto.bind("<FocusIn>", limpiar_placeholder)
+entrada_texto.bind("<FocusOut>", restaurar_placeholder)
 entrada_texto.pack(side="left", fill="x", expand=True, padx=5)
 
 boton = ttk.Button(frame_superior, text="Abrir archivo", command=abrir_archivo)
@@ -343,7 +378,7 @@ scroll_x.grid(row=1, column=0, sticky="ew")
 frame_tabla.rowconfigure(0, weight=1)
 frame_tabla.columnconfigure(0, weight=1)
 
-# Panel inferior scrollable
+# Panel inferior scrollable (contenedor global)
 frame_pasos_wrapper = ttk.Frame(ventana, height=300)
 frame_pasos_wrapper.pack(fill="x", expand=False, padx=10, pady=10)
 

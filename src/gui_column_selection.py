@@ -1,89 +1,142 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-
+import math
 
 def lanzar_selector(df, parent_frame, on_confirm_callback):
     """
-    Construye la UI para seleccionar columnas DENTRO del parent_frame dado.
-
-    Args:
-        df (pd.DataFrame): El DataFrame del que leer las columnas.
-        parent_frame (tk.Widget): El marco donde se dibujará esta UI.
-        on_confirm_callback (function): La función a llamar cuando se confirme,
-                                        pasando el df_seleccionado.
+    Selector de columnas con distribución automática según el ancho disponible.
+    Aprovecha toda la pantalla sin dejar huecos.
     """
 
-    # El LabelFrame fue creado en mejora_interfaz.py, solo dibujamos el contenido.
+    for w in parent_frame.winfo_children():
+        w.destroy()
 
     columns = list(df.columns)
-    regression_type = "multiple"
+    salida_var = tk.StringVar(value="")
+
+    # --------------------------------------------------------
+    # FUNCIONES
+    # --------------------------------------------------------
 
     def confirmar_seleccion():
-        entradas = []
-        if regression_type == "multiple":
-            for col, var in check_vars.items():
-                if var.get():
-                    entradas.append(col)
-        else:
-            entrada = entrada_var.get()
-            if entrada:
-                entradas.append(entrada)
-
+        entradas = [c for c, v in check_vars_inputs.items() if v.get()]
         salida = salida_var.get()
 
-        if not entradas or not salida or salida == "Seleccionar...":
-            messagebox.showerror("Error", "Selecciona al menos una columna de entrada y una columna de salida")
+        if not entradas:
+            messagebox.showerror("Error", "Selecciona al menos una columna de entrada.")
             return
-
+        if salida == "":
+            messagebox.showerror("Error", "Selecciona una columna de salida.")
+            return
         if salida in entradas:
-            messagebox.showerror("Error", "La columna de salida no puede ser la misma que una de entrada.")
+            messagebox.showerror("Error", "La salida no puede ser una entrada.")
             return
 
-        columnas_usadas = entradas + [salida]
-        df_seleccionado = df[columnas_usadas].copy()
+        df_sel = df[entradas + [salida]].copy()
+        on_confirm_callback(df_sel)
 
-        # Llama a la función 'callback' que dibuja el Paso 2
-        on_confirm_callback(df_seleccionado)
+    def seleccionar_salida(cname, var):
+        """Solo una salida permitida."""
+        if var.get():
+            salida_var.set(cname)
+            for name, v in check_vars_output.items():
+                if name != cname:
+                    v.set(False)
+        else:
+            salida_var.set("")
 
-        # Contenedor para Checkbuttons con scroll
+    # --------------------------------------------------------
+    # TÍTULO
+    # --------------------------------------------------------
 
-    tk.Label(parent_frame, text="Selecciona columnas de entrada:", font=("Arial", 11, "bold")).pack(pady=(10, 0))
+    ttk.Label(parent_frame, text="Selecciona columnas", font=("Arial", 12, "bold")).pack(pady=5)
 
-    frame_canvas = ttk.Frame(parent_frame, height=100)
-    canvas = tk.Canvas(frame_canvas, height=100)
-    scrollbar = ttk.Scrollbar(frame_canvas, orient="vertical", command=canvas.yview)
-    scrollable_frame = ttk.Frame(canvas)
+    contenedor = ttk.Frame(parent_frame)
+    contenedor.pack(fill="both", expand=True, padx=10, pady=10)
 
-    scrollable_frame.bind(
-        "<Configure>",
-        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-    )
+    frame_inputs = ttk.LabelFrame(contenedor, text="Columnas de entrada", padding=8)
+    frame_outputs = ttk.LabelFrame(contenedor, text="Columna de salida", padding=8)
 
-    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-    canvas.configure(yscrollcommand=scrollbar.set)
+    frame_inputs.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+    frame_outputs.grid(row=0, column=1, sticky="nsew")
 
-    frame_canvas.pack(fill="x", padx=10, pady=5)
-    canvas.pack(side="left", fill="x", expand=True)
-    scrollbar.pack(side="right", fill="y")
+    contenedor.columnconfigure(0, weight=1)
+    contenedor.columnconfigure(1, weight=1)
 
-    check_vars = {}
-    if regression_type == "multiple":
-        for col in columns:
-            var = tk.BooleanVar()
-            chk = tk.Checkbutton(scrollable_frame, text=col, variable=var)
-            chk.pack(anchor='w', padx=10)
-            check_vars[col] = var
-    else:
-        entrada_var = tk.StringVar()
-        entrada_menu = tk.OptionMenu(scrollable_frame, entrada_var, *columns)
-        entrada_menu.pack()
+    # Variables
+    check_vars_inputs = {}
+    check_vars_output = {}
 
-    # Sección de salida
-    tk.Label(parent_frame, text="Selecciona columna de salida:", font=("Arial", 11, "bold")).pack(pady=(10, 0))
-    salida_var = tk.StringVar(value="Seleccionar...")
-    salida_menu = ttk.OptionMenu(parent_frame, salida_var, "Seleccionar...", *columns)
-    salida_menu.pack(pady=5)
+    # --------------------------------------------------------
+    # DISTRIBUCIÓN AUTOMÁTICA SEGÚN ANCHO
+    # --------------------------------------------------------
 
-    # Botón de confirmación (MANTENER)
-    confirm_btn = ttk.Button(parent_frame, text="Confirmar y continuar", command=confirmar_seleccion)
-    confirm_btn.pack(pady=10)
+    def distribuir_checkboxes():
+        """Reorganiza los checkboxes aprovechando todo el ancho."""
+
+        # Limpiar frames
+        for w in frame_inputs.winfo_children():
+            w.destroy()
+        for w in frame_outputs.winfo_children():
+            w.destroy()
+
+        # Ancho disponible
+        ancho_inputs = frame_inputs.winfo_width()
+        ancho_outputs = frame_outputs.winfo_width()
+
+        # Si aún no existe tamaño, poner un valor base
+        ancho_inputs = max(ancho_inputs, 400)
+        ancho_outputs = max(ancho_outputs, 400)
+
+        # Tamaño estimado de un checkbox
+        check_width = 150
+
+        cols_inputs = max(1, ancho_inputs // check_width)
+        cols_outputs = max(1, ancho_outputs // check_width)
+
+        rows_inputs = math.ceil(len(columns) / cols_inputs)
+        rows_outputs = math.ceil(len(columns) / cols_outputs)
+
+        # Crear checkboxes entrada
+        r, c = 0, 0
+        for cname in columns:
+            var = check_vars_inputs[cname]
+            chk = tk.Checkbutton(frame_inputs, text=cname, variable=var)
+            chk.grid(row=r, column=c, padx=5, pady=3, sticky="w")
+
+            r += 1
+            if r >= rows_inputs:
+                r = 0
+                c += 1
+
+        # Crear checkboxes salida
+        r, c = 0, 0
+        for cname in columns:
+            var = check_vars_output[cname]
+            chk = tk.Checkbutton(
+                frame_outputs,
+                text=cname,
+                variable=var,
+                command=lambda n=cname, v=var: seleccionar_salida(n, v)
+            )
+            chk.grid(row=r, column=c, padx=5, pady=3, sticky="w")
+
+            r += 1
+            if r >= rows_outputs:
+                r = 0
+                c += 1
+
+    # Inicializar check_vars
+    for cname in columns:
+        check_vars_inputs[cname] = tk.BooleanVar()
+        check_vars_output[cname] = tk.BooleanVar()
+
+    # Llamar a la distribución cuando se cambie tamaño
+    frame_inputs.bind("<Configure>", lambda e: distribuir_checkboxes())
+    frame_outputs.bind("<Configure>", lambda e: distribuir_checkboxes())
+
+    # --------------------------------------------------------
+    # BOTÓN CONFIRMAR
+    # --------------------------------------------------------
+    ttk.Button(parent_frame, text="Confirmar y continuar", command=confirmar_seleccion)\
+        .pack(pady=15)

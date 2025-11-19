@@ -5,12 +5,17 @@ from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+# Para evitar múltiples binds del mouse cuando se abre varias veces la pestaña,
+# mantendremos una marca global (por módulo) para el bind.
+_mousebind_installed = False
 
 def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callback=None):
     """
     Crea una nueva pestaña en notebook_visor para la creación del modelo,
     con descripción, botón Crear Modelo, área de resultados y PREDICCIÓN.
     """
+
+    global _mousebind_installed
 
     # Eliminar la pestaña si ya existía para no acumularlas
     for i in range(notebook_visor.index("end")):
@@ -57,10 +62,15 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
             else:
                 canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
-    # Bindings generales
-    canvas.bind_all("<MouseWheel>", _on_mousewheel)
-    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
-    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
+    # Bindings (protegemos contra bind duplicado)
+    if not _mousebind_installed:
+        try:
+            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+            canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
+            canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
+            _mousebind_installed = True
+        except Exception:
+            pass
 
     # -------------------------------------------------
     # Interfaz: Descripción
@@ -126,9 +136,9 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
             if len(input_cols) == 1:
                 fig = plt.Figure(figsize=(6, 4), dpi=100)
                 ax = fig.add_subplot(111)
-                ax.scatter(X_train, y_train, color='blue', label='Entrenamiento', alpha=0.7)
-                ax.scatter(X_test, y_test, color='red', marker='x', label='Test')
-                ax.plot(X_train.values, y_pred_train, color='green', linewidth=2, label='Ajuste')
+                ax.scatter(X_train, y_train, label='Entrenamiento', alpha=0.7)
+                ax.scatter(X_test, y_test, marker='x', label='Test')
+                ax.plot(X_train.values, y_pred_train, linewidth=2, label='Ajuste')
                 ax.set_xlabel(input_cols[0])
                 ax.set_ylabel(output_col)
                 ax.legend()
@@ -150,7 +160,7 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
                            ).pack(pady=10)
 
             # -------------------------------------------------
-            # NUEVA FUNCIONALIDAD: REALIZAR PREDICCIÓN
+            # REALIZAR PREDICCIÓN
             # -------------------------------------------------
 
             # 1. Limpiar área de predicción anterior si existe (por si reentrenamos)
