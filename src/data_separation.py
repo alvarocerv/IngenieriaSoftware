@@ -51,7 +51,7 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
     entry_seed = ttk.Entry(frame_inputs, width=10)
 
     # --- CAMBIO AQUÍ: Semilla aleatoria por defecto ---
-    semilla_random = random.randint(1, 9999)
+    semilla_random = random.randint(1, 100)
     entry_seed.insert(0, str(semilla_random))
     # --------------------------------------------------
 
