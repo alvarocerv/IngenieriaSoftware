@@ -197,47 +197,133 @@ def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
             stop_progress()
     threading.Thread(target=hilo_guardar, daemon=True).start()
 
-def cargar_modelo():
-    ruta = filedialog.askopenfilename(title="Cargar Modelo", filetypes=[("Modelo JSON", "*.json"), ("Todos los archivos", "*.*")])
-    if not ruta:
-        messagebox.showinfo("Carga cancelada", "La carga del modelo fue cancelada.")
-        return
-    start_progress()
-    def hilo_cargar():
-        try:
-            with open(ruta, "r", encoding="utf-8") as f:
-                info = json.load(f)
-        except Exception as e:
-            messagebox.showerror("Error", f"El archivo no es válido o está corrupto:\n{e}")
-            stop_progress()
+# ================================================================
+# Guardar modelo
+# ================================================================
+def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
+    try:
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.asksaveasfilename(
+            parent=root,
+            title="Guardar Modelo",
+            initialdir=".",
+            defaultextension=".json",
+            filetypes=[("Archivo JSON", ".json"), ("Todos los archivos", ".*")]
+        )
+        root.destroy()
+        if not file_path:
+            messagebox.showinfo("Guardado cancelado", "El guardado fue cancelado.")
             return
-        def fin():
-            stop_progress()
-            tab_modelo = ttk.Frame(notebook_visor)
-            notebook_visor.add(tab_modelo, text="Modelo Cargado")
-            notebook_visor.select(tab_modelo)
-            
-            canvas_modelo = tk.Canvas(tab_modelo, bd=0, highlightthickness=0)
-            scrollbar_modelo = ttk.Scrollbar(tab_modelo, orient="vertical", command=canvas_modelo.yview)
-            canvas_modelo.configure(yscrollcommand=scrollbar_modelo.set)
 
-            scrollbar_modelo.pack(side="right", fill="y")
-            canvas_modelo.pack(fill="both", expand=True)
+        formula = f"{output_col} = " + " + ".join(
+            [f"({coef:.6f} * {col})" for coef, col in zip(modelo.coef_, input_cols)]
+        ) + f" + ({modelo.intercept_:.6f})"
 
-            frame_modelo_container = ttk.Frame(canvas_modelo)
-            canvas_modelo.create_window((0, 0), window=frame_modelo_container, anchor="nw")
+        info_modelo = {
+            "descripcion": descripcion,
+            "entradas": input_cols,
+            "salida": output_col,
+            "formula": formula,
+            "coeficientes": [float(c) for c in modelo.coef_],
+            "intercepto": float(modelo.intercept_),
+            "metricas": metricas
+        }
 
-            # Actualizar región de scroll
-            frame_modelo_container.bind("<Configure>", lambda e: canvas_modelo.configure(scrollregion=canvas_modelo.bbox("all")))
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(info_modelo, f, indent=4, ensure_ascii=False)
 
-            # Habilitar scroll global en esta pestaña
-            enable_global_scroll(canvas_modelo)
+        messagebox.showinfo("Modelo guardado", f"Guardado correctamente en:\n{file_path}")
 
-            # Mostrar texto o datos del modelo cargado (ejemplo)
-            ttk.Label(frame_modelo_container, text=json.dumps(info, indent=4), justify="left").pack(pady=10)
-            
-        ventana.after(0, fin)
-    threading.Thread(target=hilo_cargar, daemon=True).start()
+    except Exception as e:
+        messagebox.showerror("Error al guardar", f"Ocurrió un error:\n{e}")
+
+
+# ================================================================
+# recuperar modelo
+# ================================================================
+
+def cargar_modelo():
+    global notebook_visor, frame_pasos_container, df_original
+
+    ruta = filedialog.askopenfilename(
+        title="Cargar Modelo",
+        filetypes=[("Modelo JSON", ".json"), ("Todos los archivos", ".*")]
+    )
+    if not ruta:
+        return
+
+    try:
+        with open(ruta, "r", encoding="utf-8") as f:
+            info = json.load(f)
+    except Exception as e:
+        messagebox.showerror("Error", f"El archivo no es válido o está corrupto:\n{e}")
+        return
+
+    # Validación mínima
+    campos_requeridos = ["descripcion", "entradas", "salida", "formula",
+                         "coeficientes", "intercepto", "metricas"]
+
+    if not all(c in info for c in campos_requeridos):
+        messagebox.showerror("Modelo inválido",
+                             "El archivo no contiene los datos requeridos para un modelo válido.")
+        return
+
+    # Ocultar flujo inferior
+    for widget in frame_pasos_container.winfo_children():
+        widget.destroy()
+
+    # Eliminar pestañas excepto Datos
+    for i in range(notebook_visor.index("end") - 1, 0, -1):
+        notebook_visor.forget(i)
+
+    # Crear pestaña Modelo Cargado
+    tab_modelo = ttk.Frame(notebook_visor)
+    notebook_visor.add(tab_modelo, text="Modelo Cargado")
+    notebook_visor.select(tab_modelo)
+
+    # Contenedor
+    frame = ttk.Frame(tab_modelo, padding=15)
+    frame.pack(fill="both", expand=True)
+
+    ttk.Label(frame, text="Modelo Recuperado", font=("Arial", 14, "bold")).pack(pady=10)
+
+    # Descripción
+    ttk.Label(frame, text="Descripción:", font=("Arial", 11, "bold")).pack(anchor="w")
+    ttk.Label(frame, text=info["descripcion"], wraplength=800).pack(anchor="w", pady=(0,10))
+
+    # Fórmula
+    ttk.Label(frame, text="Fórmula:", font=("Arial", 11, "bold")).pack(anchor="w")
+    ttk.Label(frame, text=info["formula"], wraplength=800).pack(anchor="w", pady=(0,10))
+
+    # Coeficientes
+    ttk.Label(frame, text="Coeficientes:", font=("Arial", 11, "bold")).pack(anchor="w")
+    for col, c in zip(info["entradas"], info["coeficientes"]):
+        ttk.Label(frame, text=f"{col}: {c:.6f}").pack(anchor="w")
+
+    ttk.Label(frame, text=f"Intercepto: {info['intercepto']:.6f}").pack(anchor="w", pady=(0,10))
+
+    # Métricas
+    ttk.Label(frame, text="Métricas:", font=("Arial", 11, "bold")).pack(anchor="w")
+
+    metricas = info["metricas"]
+    cols = ("Métrica", "Entrenamiento", "Test")
+
+    tree_metrics = ttk.Treeview(frame, columns=cols, show="headings", height=2)
+    for col in cols:
+        tree_metrics.heading(col, text=col)
+        tree_metrics.column(col, width=200, anchor="center")
+
+    tree_metrics.insert("", "end", values=("R²",
+                                           f"{metricas['r2_train']:.4f}",
+                                           f"{metricas['r2_test']:.4f}"))
+    tree_metrics.insert("", "end", values=("ECM",
+                                           f"{metricas['ecm_train']:.4f}",
+                                           f"{metricas['ecm_test']:.4f}"))
+    tree_metrics.pack(pady=10)
+
+    # Confirmación
+    messagebox.showinfo("Modelo cargado", "El modelo fue recuperado exitosamente.")
 
 # Ventana principal
 ventana = tk.Tk()
