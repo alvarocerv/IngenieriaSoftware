@@ -216,6 +216,26 @@ def cargar_modelo():
             tab_modelo = ttk.Frame(notebook_visor)
             notebook_visor.add(tab_modelo, text="Modelo Cargado")
             notebook_visor.select(tab_modelo)
+            
+            canvas_modelo = tk.Canvas(tab_modelo, bd=0, highlightthickness=0)
+            scrollbar_modelo = ttk.Scrollbar(tab_modelo, orient="vertical", command=canvas_modelo.yview)
+            canvas_modelo.configure(yscrollcommand=scrollbar_modelo.set)
+
+            scrollbar_modelo.pack(side="right", fill="y")
+            canvas_modelo.pack(fill="both", expand=True)
+
+            frame_modelo_container = ttk.Frame(canvas_modelo)
+            canvas_modelo.create_window((0, 0), window=frame_modelo_container, anchor="nw")
+
+            # Actualizar región de scroll
+            frame_modelo_container.bind("<Configure>", lambda e: canvas_modelo.configure(scrollregion=canvas_modelo.bbox("all")))
+
+            # Habilitar scroll global en esta pestaña
+            enable_global_scroll(canvas_modelo)
+
+            # Mostrar texto o datos del modelo cargado (ejemplo)
+            ttk.Label(frame_modelo_container, text=json.dumps(info, indent=4), justify="left").pack(pady=10)
+            
         ventana.after(0, fin)
     threading.Thread(target=hilo_cargar, daemon=True).start()
 
@@ -308,5 +328,8 @@ canvas_pasos.bind("<Configure>", lambda e: canvas_pasos.itemconfig(frame_pasos_c
 
 # Habilitar scroll global en pasos
 enable_global_scroll(canvas_pasos)
+
+# Mensaje de bienvenida al iniciar
+ventana.after(200, lambda: messagebox.showinfo("Visor y preprocesador de datos", "Bienvenido! Para comenzar, haga clic en 'Abrir archivo' y seleccione un archivo de datos compatible (CSV, Excel, SQLite) o cargue un modelo existente."))
 
 ventana.mainloop()
