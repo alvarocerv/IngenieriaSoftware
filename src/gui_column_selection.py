@@ -104,9 +104,6 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
             
             for i in range(rows_inputs):
                 frame_inputs.rowconfigure(i, weight=1)
-                
-        # Variable para la columna de salida
-        salida_var = tk.StringVar()
 
         # Label
         ttk.Label(frame_outputs, text="Selecciona la columna de salida:").pack(anchor="w", pady=(0,5))
