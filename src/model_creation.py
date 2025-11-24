@@ -39,6 +39,7 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
     frame_content.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
     canvas.bind("<Configure>", lambda e: canvas.itemconfig(frame_id, width=e.width))
 
+
     # Scroll con rueda del mouse
     def _on_mousewheel(event):
         if hasattr(event, 'delta'):
@@ -98,11 +99,13 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
                        y_pred_train, y_pred_test, r2_train, ecm_train, r2_test, ecm_test,
                        prediction_frame_ref, train_df, test_df, txt_descripcion, guardar_callback):
 
-    ttk.Label(frame_content, text="Resultados del Modelo", font=("Arial", 12, "bold")).pack(pady=(15,5))
+    # ----- Título y descripción -----
+    ttk.Label(frame_content, text="Resultados del Modelo", font=("Arial", 12, "bold")).pack(pady=(10,5))
+    
     formula_str = f"{output_col} = " + " + ".join([f"({model.coef_[i]:.4f}*{col})" for i,col in enumerate(input_cols)]) + f" + ({model.intercept_:.4f})"
-    ttk.Label(frame_content, text=f"Fórmula: {formula_str}", font=("Courier",10), wraplength=700).pack(pady=5)
+    ttk.Label(frame_content, text=f"Fórmula: {formula_str}", font=("Courier",10), wraplength=700).pack(pady=5, padx=10)
 
-    # Métricas
+    # ----- Métricas -----
     cols = ("Métrica", "Entrenamiento", "Test")
     tree_metrics = ttk.Treeview(frame_content, columns=cols, show="headings", height=2)
     for col in cols:
@@ -112,57 +115,36 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
     tree_metrics.insert("", "end", values=("ECM", f"{ecm_train:.4f}", f"{ecm_test:.4f}"))
     tree_metrics.pack(pady=5, padx=10, fill="x")
 
-    # Gráfico si solo 1 variable
-    if len(input_cols) == 1:
-        fig = plt.Figure(figsize=(6,4), dpi=100)
-        ax = fig.add_subplot(111)
-        ax.scatter(train_df[input_cols[0]], train_df[output_col], label='Train', alpha=0.7)
-        ax.scatter(test_df[input_cols[0]], test_df[output_col], marker='x', label='Test')
-        ax.plot(train_df[input_cols[0]].values, y_pred_train, linewidth=2, label='Ajuste')
-        ax.set_xlabel(input_cols[0])
-        ax.set_ylabel(output_col)
-        ax.legend()
-        fig.tight_layout()
-        canvas_fig = FigureCanvasTkAgg(fig, master=frame_content)
-        canvas_fig.draw()
-        canvas_fig.get_tk_widget().pack(side="top", fill="both", expand=True, padx=10, pady=5)
-    else:
-        ttk.Label(frame_content, text="No se puede graficar múltiples variables.").pack(pady=10)
-
-    # Botón guardar
-    if guardar_callback:
-        metricas = {"r2_train": r2_train, "r2_test": r2_test,
-                    "ecm_train": ecm_train, "ecm_test": ecm_test}
-        ttk.Button(frame_content, text="Guardar Modelo",
-                   command=lambda: guardar_callback(model, input_cols, output_col,
-                                                    txt_descripcion.get("1.0",tk.END).strip(),
-                                                    metricas)).pack(pady=10)
-
-    # Predicción interactiva
+    # ----- Predicción interactiva -----
     if prediction_frame_ref[0] is not None:
         prediction_frame_ref[0].destroy()
-    frame_pred = ttk.LabelFrame(frame_content, text="Predicción Interactiva", padding="10")
-    frame_pred.pack(fill="x", padx=10, pady=20)
+
+    frame_pred = ttk.LabelFrame(frame_content, text="Predicción Interactiva", padding=10)
+    frame_pred.pack(fill="x", expand=True, pady=10, padx=10)
     prediction_frame_ref[0] = frame_pred
 
     input_entries = {}
+    row_frame = ttk.Frame(frame_pred)
+    row_frame.pack(fill="x", pady=5)
+
+    # Entradas en línea
     for col in input_cols:
-        row_frame = ttk.Frame(frame_pred)
-        row_frame.pack(fill="x", pady=2)
-        ttk.Label(row_frame, text=f"{col}:", width=20, anchor="w").pack(side="left")
-        ent = ttk.Entry(row_frame)
-        ent.pack(side="right", expand=True, fill="x")
+        ttk.Label(row_frame, text=f"{col}:", width=12, anchor="w").pack(side="left", padx=(0,2))
+        ent = ttk.Entry(row_frame, width=8)
+        ent.pack(side="left", padx=(0,10))
         input_entries[col] = ent
 
-    lbl_resultado_pred = ttk.Label(frame_pred, text="Resultado: -", font=("Arial",11,"bold"))
-    lbl_resultado_pred.pack(pady=10)
+    # Label de resultado en la misma línea
+    ttk.Label(row_frame, text=f"Resultado ({output_col}):", font=("Arial",11,"bold")).pack(side="left", padx=(20,5))
+    lbl_resultado_pred = ttk.Label(row_frame, text="-", font=("Arial",11,"bold"), foreground="green")
+    lbl_resultado_pred.pack(side="left")
 
     def ejecutar_prediccion():
         try:
             valores = [float(input_entries[col].get()) for col in input_cols]
             pred = model.predict([valores])[0]
-            lbl_resultado_pred.config(text=f"Resultado Predicción: {pred:.4f}", foreground="green")
+            lbl_resultado_pred.config(text=f"{pred:.4f}")
         except Exception as e:
             messagebox.showerror("Error", f"Error al predecir: {e}")
 
-    ttk.Button(frame_pred, text="Calcular Predicción", command=ejecutar_prediccion).pack(pady=5)
+    ttk.Button(frame_pred, text="Calcular Predicción", command=ejecutar_prediccion).pack(pady=5, anchor="w")

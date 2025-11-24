@@ -356,7 +356,10 @@ progress_bar = ttk.Progressbar(right_frame, mode='determinate', length=150, maxi
 progress_bar.pack(side="left", padx=5, pady=(5,0))
 
 frame_tabla_notebook = ttk.Frame(ventana)
-frame_tabla_notebook.pack(fill="both", expand=True, padx=10, pady=10)
+frame_tabla_notebook.pack(fill="x", expand=True, padx=10, pady=10)  
+ventana.update_idletasks()  
+frame_tabla_notebook.configure(height=int(ventana.winfo_height() * 0.30))
+
 
 notebook_visor = ttk.Notebook(frame_tabla_notebook)
 notebook_visor.pack(fill="both", expand=True)
@@ -396,7 +399,7 @@ frame_tabla.rowconfigure(0, weight=1)
 frame_tabla.columnconfigure(0, weight=1)
 
 # Panel de pasos scrollable
-frame_pasos_wrapper = ttk.Frame(ventana, height=300)
+frame_pasos_wrapper = ttk.Frame(ventana)
 frame_pasos_wrapper.pack(fill="x", expand=False, padx=10, pady=10)
 
 canvas_pasos = tk.Canvas(frame_pasos_wrapper, bd=0, highlightthickness=0)
@@ -411,6 +414,11 @@ frame_pasos_container = ttk.Frame(canvas_pasos)
 frame_pasos_container_id = canvas_pasos.create_window((0, 0), window=frame_pasos_container, anchor="nw", width=900)
 frame_pasos_container.bind("<Configure>", lambda e: canvas_pasos.configure(scrollregion=canvas_pasos.bbox("all")))
 canvas_pasos.bind("<Configure>", lambda e: canvas_pasos.itemconfig(frame_pasos_container_id, width=e.width))
+
+frame_superior.pack(pady=5, fill="x", padx=10)
+frame_tabla_notebook.pack(fill="both", expand=True, padx=10, pady=5)
+frame_pasos_wrapper.pack(fill="x", expand=False, padx=10, pady=5)
+
 
 # Habilitar scroll global en pasos
 enable_global_scroll(canvas_pasos)
