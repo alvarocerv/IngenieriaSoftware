@@ -88,12 +88,9 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
             frame_content.after(0, lambda: messagebox.showerror("Error en Modelo", f"Ocurrió un error:\n{e}"))
         finally:
             if stop_progress: stop_progress()
-
-    def crear_modelo_callback():
-        threading.Thread(target=crear_modelo_thread, daemon=True).start()
-
-    ttk.Button(frame_content, text="Crear Modelo", command=crear_modelo_callback).pack(pady=10)
-
+        
+    threading.Thread(target=crear_modelo_thread, daemon=True).start()
+        
 # ---------------- Función para mostrar resultados ----------------
 def mostrar_resultados(frame_content, model, input_cols, output_col,
                        y_pred_train, y_pred_test, r2_train, ecm_train, r2_test, ecm_test,
