@@ -35,16 +35,6 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
         df_sel = df[entradas + [salida]].copy()
         on_confirm_callback(df_sel)
 
-    def seleccionar_salida(cname, var):
-        """Solo una salida permitida."""
-        if var.get():
-            salida_var.set(cname)
-            for name, v in check_vars_output.items():
-                if name != cname:
-                    v.set(False)
-        else:
-            salida_var.set("")
-
     # --------------------------------------------------------
     # TÍTULO
     # --------------------------------------------------------
@@ -102,29 +92,34 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
         for cname in columns:
             var = check_vars_inputs[cname]
             chk = tk.Checkbutton(frame_inputs, text=cname, variable=var)
-            chk.grid(row=r, column=c, padx=5, pady=3, sticky="w")
+            chk.grid(row=r, column=c, padx=5, pady=3, sticky="n")
 
             r += 1
             if r >= rows_inputs:
                 r = 0
                 c += 1
+        # Hacer que cada columna se expanda igual
+            for i in range(cols_inputs):
+                frame_inputs.columnconfigure(i, weight=1)
+            
+            for i in range(rows_inputs):
+                frame_inputs.rowconfigure(i, weight=1)
+                
+        # Variable para la columna de salida
+        salida_var = tk.StringVar()
 
-        # Crear checkboxes salida
-        r, c = 0, 0
-        for cname in columns:
-            var = check_vars_output[cname]
-            chk = tk.Checkbutton(
-                frame_outputs,
-                text=cname,
-                variable=var,
-                command=lambda n=cname, v=var: seleccionar_salida(n, v)
-            )
-            chk.grid(row=r, column=c, padx=5, pady=3, sticky="w")
+        # Label
+        ttk.Label(frame_outputs, text="Selecciona la columna de salida:").pack(anchor="w", pady=(0,5))
 
-            r += 1
-            if r >= rows_outputs:
-                r = 0
-                c += 1
+        # Combobox con todas las columnas
+        combo_salida = ttk.Combobox(
+            frame_outputs,
+            textvariable=salida_var,
+            values=columns,
+            state="readonly", 
+        )
+        combo_salida.pack(fill="x", pady=5)
+
 
     # Inicializar check_vars
     for cname in columns:
