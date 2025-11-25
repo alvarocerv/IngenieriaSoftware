@@ -7,6 +7,7 @@ import threading
 import math
 
 # Funciones externas
+from dataset_loading import load_data
 from column_selection import lanzar_selector
 from nonexistent_data import manejo_datos_inexistentes
 from data_separation import iniciar_separacion
@@ -14,6 +15,7 @@ from model_creation import dibujar_ui_model_creation
 
 # Variables globales
 df_original = None
+df_original_sin_filtrar = None
 df_seleccionado = None
 df_procesado = None
 df_train = None
@@ -51,36 +53,12 @@ def stop_progress():
     progress_running = False
     progress_bar['value'] = 0
 
-# Scroll global con trackpad/dedos
+# Scroll global con trackpad
 def enable_global_scroll(canvas):
     def _on_mousewheel(event):
         canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
     canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", _on_mousewheel))
     canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
-
-# Funciones de carga y visualización
-def load_data(file_path):
-    try:
-        if file_path.endswith(".csv"):
-            df = pd.read_csv(file_path)
-        elif file_path.endswith((".xls", ".xlsx")):
-            df = pd.read_excel(file_path)
-        elif file_path.endswith((".sqlite", ".db")):
-            conn = sqlite3.connect(file_path)
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-            tables = cursor.fetchall()
-            if not tables:
-                raise ValueError("No se encontraron tablas en la base de datos SQLite.")
-            table_name = tables[0][0]
-            df = pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
-            conn.close()
-        else:
-            raise ValueError("Formato de archivo no válido.")
-        return df
-    except Exception as e:
-        messagebox.showerror("Error al cargar", f"Ocurrió un problema:\n{e}")
-        return None
 
 def mostrar_tabla(df):
     global tree
@@ -124,13 +102,13 @@ def iniciar_paso_2(df):
     canvas_pasos.configure(scrollregion=canvas_pasos.bbox("all"))
 
 def iniciar_paso_3(df_procesado_local):
-    global df_procesado
+    global df_procesado, df_original_sin_filtrar
     df_procesado = df_procesado_local
     mostrar_tabla(df_original)
     messagebox.showinfo("Paso 2 completado", "Preprocesado de datos inexistentes completado exitosamente.")
     frame_paso_3 = ttk.LabelFrame(frame_pasos_container, text="Paso 3: Separación de Datos", padding=10)
     frame_paso_3.pack(fill="x", padx=10, pady=10)
-    iniciar_separacion(df_procesado, frame_paso_3, mostrar_tabla, iniciar_paso_4)
+    iniciar_separacion(df_procesado, frame_paso_3, mostrar_tabla, iniciar_paso_4, df_original=df_original_sin_filtrar)
     frame_pasos_container.update_idletasks()
     canvas_pasos.configure(scrollregion=canvas_pasos.bbox("all"))
 
@@ -151,7 +129,7 @@ def iniciar_paso_4(train_df_local, test_df_local):
 
     threading.Thread(target=crear_modelo_hilo, daemon=True).start()
 
-# Funciones de UI para abrir archivo, guardar modelo y cargar modelo
+# Funciones de UI para abrir archivo
 def abrir_archivo():
     global df_original
     ruta = filedialog.askopenfilename(title="Seleccionar archivo de datos", filetypes=[("Archivos soportados", "*.csv *.xls *.xlsx *.sqlite *.db"), ("Todos los archivos", "*.*")])
@@ -164,12 +142,14 @@ def abrir_archivo():
     entrada_texto.config(state="readonly", disabledforeground="black")
     start_progress()
     def hilo_carga():
-        global df_original
+        global df_original, df_original_sin_filtrar
         df = load_data(ruta)
         def fin():
+            global df_original, df_original_sin_filtrar
             stop_progress()
             if df is not None:
                 df_original = df.copy()
+                df_original_sin_filtrar = df.copy()
                 mostrar_tabla(df_original)
                 messagebox.showinfo("Datos cargados", "Archivo cargado exitosamente. Iniciando flujo de preprocesamiento.")
                 iniciar_flujo_paso_1(df_original)
@@ -178,28 +158,7 @@ def abrir_archivo():
         ventana.after(0, fin)
     threading.Thread(target=hilo_carga, daemon=True).start()
 
-def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
-    file_path = filedialog.asksaveasfilename(title="Guardar Modelo", defaultextension=".json", filetypes=[("Archivo JSON", "*.json"), ("Todos los archivos", "*.*")])
-    if not file_path:
-        messagebox.showinfo("Guardado cancelado", "El guardado fue cancelado.")
-        return
-    start_progress()
-    def hilo_guardar():
-        try:
-            formula = f"{output_col} = " + " + ".join([f"({coef:.6f} * {col})" for coef, col in zip(modelo.coef_, input_cols)]) + f" + ({modelo.intercept_:.6f})"
-            info_modelo = {"descripcion": descripcion, "entradas": input_cols, "salida": output_col, "formula": formula, "coeficientes": [float(c) for c in modelo.coef_], "intercepto": float(modelo.intercept_), "metricas": metricas}
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(info_modelo, f, indent=4, ensure_ascii=False)
-            messagebox.showinfo("Modelo guardado", f"Modelo guardado correctamente en:\n{file_path}")
-        except Exception as e:
-            messagebox.showerror("Error al guardar", f"Ocurrió un error al guardar el modelo:\n{e}")
-        finally:
-            stop_progress()
-    threading.Thread(target=hilo_guardar, daemon=True).start()
-
-# ================================================================
 # Guardar modelo
-# ================================================================
 def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
     try:
         root = tk.Tk()
@@ -238,11 +197,7 @@ def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
     except Exception as e:
         messagebox.showerror("Error al guardar", f"Ocurrió un error:\n{e}")
 
-
-# ================================================================
-# recuperar modelo
-# ================================================================
-
+# Recuperar modelo
 def cargar_modelo():
     global notebook_visor, frame_pasos_container, df_original
 
@@ -306,7 +261,7 @@ def cargar_modelo():
     ttk.Label(frame, text="Modelo Recuperado", font=("Arial", 14, "bold")).pack(pady=10)
 
     # Descripción
-    ttk.Label(frame, text="Descripción opcional:", font=("Arial", 11, "bold")).pack(anchor="w")
+    ttk.Label(frame, text="Descripción:", font=("Arial", 11, "bold")).pack(anchor="w")
     ttk.Label(frame, text=info["descripcion"], wraplength=800).pack(anchor="w", pady=(0,10))
 
     # Fórmula
@@ -445,7 +400,6 @@ canvas_pasos.bind("<Configure>", lambda e: canvas_pasos.itemconfig(frame_pasos_c
 # Asegurar empaquetado de los elementos superiores
 frame_superior.pack(pady=5, fill="x", padx=10)
 frame_tabla_notebook.pack(fill="both", expand=True, padx=10, pady=5)
-
 
 # Habilitar scroll global en pasos
 enable_global_scroll(canvas_pasos)
