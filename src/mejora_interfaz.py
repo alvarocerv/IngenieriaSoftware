@@ -273,23 +273,40 @@ def cargar_modelo():
     for widget in frame_pasos_container.winfo_children():
         widget.destroy()
 
-    # Eliminar pestañas excepto Datos
-    for i in range(notebook_visor.index("end") - 1, 0, -1):
-        notebook_visor.forget(i)
+    # Eliminar pestañas que no sean la de datos ni la de modelo (si existen)
+    for tab_id in notebook_visor.tabs():
+        text = notebook_visor.tab(tab_id, "text")
+        if text not in ("Datos Originales/Procesados", "Modelo"):
+            notebook_visor.forget(tab_id)
 
-    # Crear pestaña Modelo Cargado
-    tab_modelo = ttk.Frame(notebook_visor)
-    notebook_visor.add(tab_modelo, text="Modelo Cargado")
-    notebook_visor.select(tab_modelo)
+    # Reutilizar pestaña "Modelo" si existe, sino crearla
+    model_tab = None
+    for tab_id in notebook_visor.tabs():
+        if notebook_visor.tab(tab_id, "text") == "Modelo":
+            try:
+                model_tab = notebook_visor.nametowidget(tab_id)
+            except Exception:
+                model_tab = None
+            break
+
+    if model_tab is None:
+        model_tab = ttk.Frame(notebook_visor)
+        notebook_visor.add(model_tab, text="Modelo")
+
+    # Limpiar contenido de la pestaña de modelo antes de rellenarla
+    for w in model_tab.winfo_children():
+        w.destroy()
+
+    notebook_visor.select(model_tab)
 
     # Contenedor
-    frame = ttk.Frame(tab_modelo, padding=15)
+    frame = ttk.Frame(model_tab, padding=15)
     frame.pack(fill="both", expand=True)
 
     ttk.Label(frame, text="Modelo Recuperado", font=("Arial", 14, "bold")).pack(pady=10)
 
     # Descripción
-    ttk.Label(frame, text="Descripción:", font=("Arial", 11, "bold")).pack(anchor="w")
+    ttk.Label(frame, text="Descripción opcional:", font=("Arial", 11, "bold")).pack(anchor="w")
     ttk.Label(frame, text=info["descripcion"], wraplength=800).pack(anchor="w", pady=(0,10))
 
     # Fórmula
@@ -357,8 +374,6 @@ progress_bar.pack(side="left", padx=5, pady=(5,0))
 
 frame_tabla_notebook = ttk.Frame(ventana)
 frame_tabla_notebook.pack(fill="x", expand=True, padx=10, pady=10)  
-ventana.update_idletasks()  
-frame_tabla_notebook.configure(height=int(ventana.winfo_height() * 0.30))
 
 
 notebook_visor = ttk.Notebook(frame_tabla_notebook)
@@ -368,7 +383,12 @@ tab_visor = ttk.Frame(notebook_visor)
 notebook_visor.add(tab_visor, text="Datos Originales/Procesados")
 
 frame_tabla = ttk.Frame(tab_visor)
-frame_tabla.pack(fill="both", expand=True)
+# Usamos grid en la pestaña para controlar proporciones.
+# La fila 0 (tabla) tendrá peso 1 y la fila 1 (panel de pasos) peso 2 -> tabla ocupa 1/3
+tab_visor.rowconfigure(0, weight=1)
+tab_visor.rowconfigure(1, weight=2)
+tab_visor.columnconfigure(0, weight=1)
+frame_tabla.grid(row=0, column=0, sticky="nsew")
 
 
 # Función que oculta o muestra paneles según la pestaña seleccionada
@@ -378,12 +398,19 @@ def on_tab_change(event):
     
     if tab_text == "Datos Originales/Procesados":
         # Mostrar tabla y pasos
-        frame_tabla.pack(fill="both", expand=True)
-        frame_pasos_wrapper.pack(fill="x", expand=False, padx=10, pady=10)
+        frame_tabla.grid()
+        # restaurar panel de pasos si estaba oculto
+        try:
+            frame_pasos_wrapper.grid()
+        except Exception:
+            pass
     else:
         # Ocultar tabla y pasos
-        frame_tabla.pack_forget()
-        frame_pasos_wrapper.pack_forget()
+        frame_tabla.grid_remove()
+        try:
+            frame_pasos_wrapper.grid_remove()
+        except Exception:
+            pass
 
 notebook_visor.bind("<<NotebookTabChanged>>", on_tab_change)
 
@@ -398,9 +425,9 @@ scroll_x.grid(row=1, column=0, sticky="ew")
 frame_tabla.rowconfigure(0, weight=1)
 frame_tabla.columnconfigure(0, weight=1)
 
-# Panel de pasos scrollable
-frame_pasos_wrapper = ttk.Frame(ventana)
-frame_pasos_wrapper.pack(fill="x", expand=False, padx=10, pady=10)
+# Panel de pasos scrollable dentro de la pestaña para poder dimensionarlo junto a la tabla
+frame_pasos_wrapper = ttk.Frame(tab_visor)
+frame_pasos_wrapper.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
 
 canvas_pasos = tk.Canvas(frame_pasos_wrapper, bd=0, highlightthickness=0)
 scrollbar_pasos = ttk.Scrollbar(frame_pasos_wrapper, orient="vertical", command=canvas_pasos.yview)
@@ -415,9 +442,9 @@ frame_pasos_container_id = canvas_pasos.create_window((0, 0), window=frame_pasos
 frame_pasos_container.bind("<Configure>", lambda e: canvas_pasos.configure(scrollregion=canvas_pasos.bbox("all")))
 canvas_pasos.bind("<Configure>", lambda e: canvas_pasos.itemconfig(frame_pasos_container_id, width=e.width))
 
+# Asegurar empaquetado de los elementos superiores
 frame_superior.pack(pady=5, fill="x", padx=10)
 frame_tabla_notebook.pack(fill="both", expand=True, padx=10, pady=5)
-frame_pasos_wrapper.pack(fill="x", expand=False, padx=10, pady=5)
 
 
 # Habilitar scroll global en pasos

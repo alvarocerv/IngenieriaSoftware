@@ -88,22 +88,21 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
         rows_outputs = math.ceil(len(columns) / cols_outputs)
 
         # Crear checkboxes entrada
-        r, c = 0, 0
-        for cname in columns:
+        # Distribuir por columnas calculadas: llenamos por columnas para equilibrar
+        for idx, cname in enumerate(columns):
+            row = idx % rows_inputs
+            col = idx // rows_inputs
             var = check_vars_inputs[cname]
-            chk = tk.Checkbutton(frame_inputs, text=cname, variable=var)
-            chk.grid(row=r, column=c, padx=5, pady=3, sticky="n")
+            # Usar ttk.Checkbutton para estilo consistente
+            chk = ttk.Checkbutton(frame_inputs, text=cname, variable=var)
+            # Expandir en ambas direcciones para ocupar el espacio disponible
+            chk.grid(row=row, column=col, padx=5, pady=3, sticky="nsew")
 
-            r += 1
-            if r >= rows_inputs:
-                r = 0
-                c += 1
-        # Hacer que cada columna se expanda igual
-            for i in range(cols_inputs):
-                frame_inputs.columnconfigure(i, weight=1)
-            
-            for i in range(rows_inputs):
-                frame_inputs.rowconfigure(i, weight=1)
+        # Hacer que cada columna y fila se expanda igual
+        for i in range(cols_inputs):
+            frame_inputs.columnconfigure(i, weight=1)
+        for i in range(rows_inputs):
+            frame_inputs.rowconfigure(i, weight=1)
 
         # Label
         ttk.Label(frame_outputs, text="Selecciona la columna de salida:").pack(anchor="w", pady=(0,5))
