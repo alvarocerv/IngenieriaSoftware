@@ -7,8 +7,8 @@ import threading
 import math
 
 # Funciones externas
-from gui_column_selection import lanzar_selector
-from manejo_inexistentes import manejo_datos_inexistentes
+from column_selection import lanzar_selector
+from nonexistent_data import manejo_datos_inexistentes
 from data_separation import iniciar_separacion
 from model_creation import dibujar_ui_model_creation
 
