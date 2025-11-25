@@ -11,9 +11,6 @@ _mousebind_installed = False
 
 def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callback=None,
                               start_progress=None, stop_progress=None):
-    """
-    Pestaña de modelo: solo creación, métricas y predicción interactiva.
-    """
     global _mousebind_installed
 
     # Eliminar pestaña anterior si existe
@@ -91,18 +88,18 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
         
     threading.Thread(target=crear_modelo_thread, daemon=True).start()
         
-# ---------------- Función para mostrar resultados ----------------
+# Función para mostrar resultados
 def mostrar_resultados(frame_content, model, input_cols, output_col,
                        y_pred_train, y_pred_test, r2_train, ecm_train, r2_test, ecm_test,
                        prediction_frame_ref, train_df, test_df, txt_descripcion, guardar_callback):
 
-    # ----- Título y descripción -----
+    # Título y descripción
     ttk.Label(frame_content, text="Resultados del Modelo", font=("Arial", 12, "bold")).pack(pady=(10,5))
     
     formula_str = f"{output_col} = " + " + ".join([f"({model.coef_[i]:.4f}*{col})" for i,col in enumerate(input_cols)]) + f" + ({model.intercept_:.4f})"
     ttk.Label(frame_content, text=f"Fórmula: {formula_str}", font=("Courier",10), wraplength=700).pack(pady=5, padx=10)
 
-    # ----- Métricas -----
+    # Métricas
     cols = ("Métrica", "Entrenamiento", "Test")
     tree_metrics = ttk.Treeview(frame_content, columns=cols, show="headings", height=2)
     for col in cols:
@@ -139,7 +136,7 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
                                                     metricas)).pack(pady=10)
 
 
-    # ----- Predicción interactiva -----
+    # Predicción interactiva
     if prediction_frame_ref[0] is not None:
         prediction_frame_ref[0].destroy()
 

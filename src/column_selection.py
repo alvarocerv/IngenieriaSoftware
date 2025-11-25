@@ -3,20 +3,11 @@ from tkinter import ttk, messagebox
 import math
 
 def lanzar_selector(df, parent_frame, on_confirm_callback):
-    """
-    Selector de columnas con distribución automática según el ancho disponible.
-    Aprovecha toda la pantalla sin dejar huecos.
-    """
-
     for w in parent_frame.winfo_children():
         w.destroy()
 
     columns = list(df.columns)
     salida_var = tk.StringVar(value="")
-
-    # --------------------------------------------------------
-    # FUNCIONES
-    # --------------------------------------------------------
 
     def confirmar_seleccion():
         entradas = [c for c, v in check_vars_inputs.items() if v.get()]
@@ -35,10 +26,6 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
         df_sel = df[entradas + [salida]].copy()
         on_confirm_callback(df_sel)
 
-    # --------------------------------------------------------
-    # TÍTULO
-    # --------------------------------------------------------
-
     ttk.Label(parent_frame, text="Selecciona columnas", font=("Arial", 12, "bold")).pack(pady=5)
 
     contenedor = ttk.Frame(parent_frame)
@@ -53,17 +40,10 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
     contenedor.columnconfigure(0, weight=1)
     contenedor.columnconfigure(1, weight=1)
 
-    # Variables
     check_vars_inputs = {}
     check_vars_output = {}
 
-    # --------------------------------------------------------
-    # DISTRIBUCIÓN AUTOMÁTICA SEGÚN ANCHO
-    # --------------------------------------------------------
-
     def distribuir_checkboxes():
-        """Reorganiza los checkboxes aprovechando todo el ancho."""
-
         # Limpiar frames
         for w in frame_inputs.winfo_children():
             w.destroy()
@@ -126,8 +106,6 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
     frame_inputs.bind("<Configure>", lambda e: distribuir_checkboxes())
     frame_outputs.bind("<Configure>", lambda e: distribuir_checkboxes())
 
-    # --------------------------------------------------------
-    # BOTÓN CONFIRMAR
-    # --------------------------------------------------------
+    # Botón confirmar
     ttk.Button(parent_frame, text="Confirmar y continuar", command=confirmar_seleccion)\
         .pack(pady=15)

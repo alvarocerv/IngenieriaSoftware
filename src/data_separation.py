@@ -2,20 +2,16 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import pandas as pd
 from sklearn.model_selection import train_test_split
-import random  # <--- IMPORTANTE: Añadido para generar la semilla aleatoria
+import random
 
-# variables globales
+# Variables globales
 train_df = None
 test_df = None
 
 
 def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, callback=None):
-    """
-    Dibuja la interfaz para separación de datos y realiza la separación
-    """
     global train_df, test_df
-
-    # Frame para inputs
+    
     frame_inputs = ttk.Frame(frame_pasos_container)
     frame_inputs.pack(pady=5, padx=10)
 
@@ -50,22 +46,18 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
                                                                                  sticky="w")
     entry_seed = ttk.Entry(frame_inputs, width=10)
 
-    # --- CAMBIO AQUÍ: Semilla aleatoria por defecto ---
+    # Semilla aleatoria por defecto
     semilla_random = random.randint(1, 100)
     entry_seed.insert(0, str(semilla_random))
-    # --------------------------------------------------
 
     entry_seed.grid(row=2, column=1, padx=5, pady=5)
 
-    # frame para botones de vista
+    # Frame para botones de vista
     frame_vista = ttk.Frame(frame_pasos_container)
     btn_train = None
     btn_test = None
 
     def ver_conjunto(df, boton_actual, boton_opuesto):
-        """
-        Cambia el estado de los botones y muestra info o tabla.
-        """
         boton_opuesto.config(state=tk.DISABLED)
         boton_actual.config(state=tk.NORMAL)
         # Llamamos a la función externa para actualizar la tabla visual
@@ -74,7 +66,6 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
 
     def separar_datos():
         global train_df, test_df, btn_train, btn_test
-
         try:
             train_pct_str = entry_train_pct.get()
             seed_str = entry_seed.get()
@@ -110,11 +101,11 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
                                 f"Conjunto de Entrenamiento: {len(train_df)} filas\n"
                                 f"Conjunto de Test: {len(test_df)} filas")
 
-            # 1. Ocultar widgets de input
+            # Ocultar widgets de input
             frame_inputs.pack_forget()
             btn_separar.pack_forget()
 
-            # 2. Crear y mostrar botones de visualización
+            # Crear y mostrar botones de visualización
             for widget in frame_vista.winfo_children():
                 widget.destroy()
 
@@ -128,7 +119,7 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
             btn_test.pack(side=tk.LEFT, padx=5)
             frame_vista.pack(pady=10)
 
-            # 3. Callback al siguiente paso (Creación del modelo)
+            # Callback al siguiente paso (Creación del modelo)
             if callback:
                 callback(train_df, test_df)
 
