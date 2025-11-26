@@ -5,14 +5,7 @@ import numpy as np
 
 
 def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
-    """
-    Construye la UI para manejar datos inexistentes DENTRO
-    del parent_frame dado (Paso 2).
-    """
-
-    # NO limpiamos ni ponemos título.
-
-    # --- Detección automática ---
+    # Detección automática
     missing_info = df.isnull().sum()
     missing_cols = missing_info[missing_info > 0]
 
@@ -22,7 +15,7 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
         on_apply_callback(df)
         return
 
-    # --- Construir la UI ---
+    # Construir la UI
     tk.Label(parent_frame, text="Columnas con valores inexistentes:", font=("Arial", 11, "bold")).pack(pady=5)
 
     tree_frame = ttk.Frame(parent_frame)
