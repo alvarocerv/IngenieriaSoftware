@@ -11,6 +11,7 @@ _mousebind_installed = False
 
 def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callback=None,
                               start_progress=None, stop_progress=None):
+    """Crea la interfaz de creación de modelo en un hilo separado"""
     global _mousebind_installed
 
     # Eliminar pestaña anterior si existe
@@ -36,7 +37,6 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
     frame_content.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
     canvas.bind("<Configure>", lambda e: canvas.itemconfig(frame_id, width=e.width))
 
-
     # Scroll con rueda del mouse
     def _on_mousewheel(event):
         if hasattr(event, 'delta'):
@@ -53,6 +53,7 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
     prediction_frame_ref = [None]
 
     def crear_modelo_thread():
+        """Crea el modelo en un hilo separado para no bloquear la interfaz"""
         if start_progress: start_progress()
         try:
             output_col = train_df.columns[-1]
@@ -88,11 +89,11 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
         
     threading.Thread(target=crear_modelo_thread, daemon=True).start()
         
-# Función para mostrar resultados
 def mostrar_resultados(frame_content, model, input_cols, output_col,
                        y_pred_train, y_pred_test, r2_train, ecm_train, r2_test, ecm_test,
                        prediction_frame_ref, train_df, test_df, txt_descripcion, guardar_callback):
-
+    """Muestra los resultados del modelo en la interfaz"""
+    
     # Título y descripción
     ttk.Label(frame_content, text="Resultados del Modelo", font=("Arial", 12, "bold")).pack(pady=(10,5))
     
@@ -135,7 +136,6 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
                                                     txt_descripcion.get("1.0",tk.END).strip(),
                                                     metricas)).pack(pady=10)
 
-
     # Predicción interactiva
     if prediction_frame_ref[0] is not None:
         prediction_frame_ref[0].destroy()
@@ -161,6 +161,7 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
     lbl_resultado_pred.pack(side="left")
 
     def ejecutar_prediccion():
+        """Ejecuta la predicción usando el modelo con los valores ingresados"""
         try:
             valores = [float(input_entries[col].get()) for col in input_cols]
             pred = model.predict([valores])[0]

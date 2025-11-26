@@ -4,6 +4,7 @@ import json
 
 
 def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
+    """Guarda el modelo en un archivo JSON seleccionado por el usuario"""
     try:
         root = tk.Tk()
         root.withdraw()
@@ -43,6 +44,7 @@ def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
 
 
 def cargar_modelo(notebook_visor, frame_pasos_container):
+    """Carga un modelo desde un archivo JSON seleccionado por el usuario y actualiza la interfaz"""
     ruta = filedialog.askopenfilename(
         title="Cargar Modelo",
         filetypes=[("Modelo JSON", ".json"), ("Todos los archivos", ".*")]
