@@ -2,9 +2,10 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 import sqlite3
+import threading
 
 # Función para cargar archivos
-def load_data(file_path):
+def cargar_dataset(file_path):
     try:
         if file_path.endswith(".csv"):
             df = pd.read_csv(file_path)
@@ -36,79 +37,36 @@ def load_data(file_path):
         messagebox.showerror("Error inesperado", f"Ocurrió un problema:\n{e}")
     return None
 
-# Interfaz gráfica
-def abrir_archivo():
+
+def abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, iniciar_flujo_paso_1, ventana, set_dataframes):
     ruta = filedialog.askopenfilename(
-        title="Seleccionar archivo",
-        filetypes=[
-            ("Archivos soportados", "*.csv *.xls *.xlsx *.sqlite *.db"),
-            ("Todos los archivos", "*.*")
-        ]
+        title="Seleccionar archivo de datos", 
+        filetypes=[("Archivos soportados", "*.csv *.xls *.xlsx *.sqlite *.db"), ("Todos los archivos", "*.*")]
     )
     if not ruta:
+        messagebox.showinfo("Carga cancelada", "La carga de archivo fue cancelada.")
         return
-
+    
     entrada_texto.config(state="normal")
     entrada_texto.delete(0, tk.END)
     entrada_texto.insert(0, ruta)
-    entrada_texto.config(state="readonly")
-
-    df = load_data(ruta)
-    if df is not None:
-        mostrar_tabla(df)
-        messagebox.showinfo("Éxito", "Datos cargados correctamente.")
-
-def mostrar_tabla(df):
-    # Limpiar tabla anterior
-    for col in tree["columns"]:
-        tree.heading(col, text="")
-    tree.delete(*tree.get_children())
-
-    # Configurar nuevas columnas
-    columnas = list(df.columns)
-    tree["columns"] = columnas
-    for col in columnas:
-        tree.heading(col, text=col)
-        tree.column(col, width=120, anchor="w")
-
-    # Insertar hasta 1000 filas para mantener fluidez
-    for _, fila in df.head(1000).iterrows():
-        tree.insert("", "end", values=list(fila))
-
-# Crear ventana principal
-ventana = tk.Tk()
-ventana.title("Visor de Archivos de Datos")
-ventana.geometry("900x600")
-
-# Marco superior con etiqueta, cuadro y botón
-frame_superior = ttk.Frame(ventana)
-frame_superior.pack(pady=10)
-
-etiqueta_ruta = ttk.Label(frame_superior, text="Ruta:")
-etiqueta_ruta.grid(row=0, column=0, padx=5)
-
-entrada_texto = tk.Entry(frame_superior, width=70, state="normal", fg="gray")
-entrada_texto.insert(0, "Seleccione el archivo a cargar")
-entrada_texto.config(state="readonly")
-entrada_texto.grid(row=0, column=1, padx=5)
-
-boton = ttk.Button(frame_superior, text="Abrir archivo", command=lambda: [abrir_archivo()])
-boton.grid(row=0, column=2, padx=5)
-
-# Marco para la tabla
-frame_tabla = ttk.Frame(ventana)
-frame_tabla.pack(fill="both", expand=True, padx=10, pady=10)
-
-tree = ttk.Treeview(frame_tabla, show="headings")
-scroll_y = ttk.Scrollbar(frame_tabla, orient="vertical", command=tree.yview)
-scroll_x = ttk.Scrollbar(frame_tabla, orient="horizontal", command=tree.xview)
-tree.configure(yscroll=scroll_y.set, xscroll=scroll_x.set)
-
-tree.grid(row=0, column=0, sticky="nsew")
-scroll_y.grid(row=0, column=1, sticky="ns")
-scroll_x.grid(row=1, column=0, sticky="ew")
-
-frame_tabla.rowconfigure(0, weight=1)
-frame_tabla.columnconfigure(0, weight=1)
-
-ventana.mainloop()
+    entrada_texto.config(state="readonly", disabledforeground="black")
+    start_progress()
+    
+    def hilo_carga():
+        df = cargar_dataset(ruta)
+        def fin():
+            stop_progress()
+            if df is not None:
+                df_original = df.copy()
+                df_original_sin_filtrar = df.copy()
+                # Actualizar las variables globales en interface.py
+                set_dataframes(df_original, df_original_sin_filtrar)
+                mostrar_tabla(df_original)
+                messagebox.showinfo("Datos cargados", "Archivo cargado exitosamente. Iniciando flujo de preprocesamiento.")
+                iniciar_flujo_paso_1(df_original)
+            else:
+                messagebox.showerror("Error en carga", "No se pudo cargar el archivo.")
+        ventana.after(0, fin)
+    
+    threading.Thread(target=hilo_carga, daemon=True).start()
