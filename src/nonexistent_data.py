@@ -1,10 +1,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
-import pandas as pd
 import numpy as np
 
 
 def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
+    """Maneja los datos inexistentes en el DataFrame según la opción seleccionada por el usuario"""
+    
     # Detección automática
     missing_info = df.isnull().sum()
     missing_cols = missing_info[missing_info > 0]
@@ -41,6 +42,7 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
         ttk.Radiobutton(parent_frame, text=texto, variable=opcion, value=valor).pack(anchor="w", padx=40)
 
     def aplicar_opcion():
+        """Aplica la opción seleccionada para manejar los datos inexistentes"""
         try:
             seleccion = opcion.get()
             df_result = df.copy()
@@ -65,5 +67,5 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
         except Exception as e:
             messagebox.showerror("Error en preprocesado", f"Ocurrió un problema: {e}")
 
-    # Botón de Aplicar y Finalizar (MANTENER)
+    # Botón de Aplicar y Finalizar
     ttk.Button(parent_frame, text="Aplicar y Finalizar", command=aplicar_opcion).pack(pady=15)

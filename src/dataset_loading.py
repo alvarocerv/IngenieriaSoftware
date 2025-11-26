@@ -1,11 +1,11 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import filedialog, messagebox
 import pandas as pd
 import sqlite3
 import threading
 
-# Función para cargar archivos
 def cargar_dataset(file_path):
+    """Carga un dataset desde un archivo CSV, Excel o SQLite y lo devuelve como un DataFrame de pandas"""
     try:
         if file_path.endswith(".csv"):
             df = pd.read_csv(file_path)
@@ -39,6 +39,7 @@ def cargar_dataset(file_path):
 
 
 def abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, iniciar_flujo_paso_1, ventana, set_dataframes):
+    """Abre un cuadro de diálogo para seleccionar un archivo de datos, lo carga y actualiza la interfaz"""
     ruta = filedialog.askopenfilename(
         title="Seleccionar archivo de datos", 
         filetypes=[("Archivos soportados", "*.csv *.xls *.xlsx *.sqlite *.db"), ("Todos los archivos", "*.*")]
@@ -54,8 +55,10 @@ def abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, i
     start_progress()
     
     def hilo_carga():
+        """Hilo para cargar el dataset y actualizar la interfaz"""
         df = cargar_dataset(ruta)
         def fin():
+            """Finaliza la carga del dataset y actualiza la interfaz"""
             stop_progress()
             if df is not None:
                 df_original = df.copy()

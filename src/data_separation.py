@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import pandas as pd
 from sklearn.model_selection import train_test_split
 import random
 
@@ -10,6 +9,7 @@ test_df = None
 
 
 def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, callback=None, df_original=None):
+    """Separa los datos en conjuntos de entrenamiento y prueba según el porcentaje y semilla proporcionados"""
     global train_df, test_df
     
     frame_inputs = ttk.Frame(frame_pasos_container)
@@ -18,6 +18,7 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
     train_pct_var = tk.StringVar(value="")
 
     def actualizar_test_pct(*args):
+        """Actualiza la etiqueta del porcentaje de test según el porcentaje de entrenamiento ingresado"""
         try:
             val = train_pct_var.get()
             if val:
@@ -59,17 +60,18 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
     # Si no se proporciona df_original, usar df_procesado
     df_original_completo = df_original if df_original is not None else df_procesado
 
-    def ver_conjunto(df, boton_actual, boton_opuesto):
-        # Simplemente mostrar el conjunto sin deshabilitar botones
+    def ver_conjunto(df):
+        """Muestra el conjunto de datos seleccionado"""
         if func_mostrar_tabla:
             func_mostrar_tabla(df)
 
     def ver_todos_datos():
-        # Mostrar todos los datos originales con todas las columnas
+        """Muestra todos los datos originales con todas las columnas"""
         if func_mostrar_tabla:
             func_mostrar_tabla(df_original_completo)
 
     def separar_datos():
+        """Separa los datos según el porcentaje y semilla proporcionados."""
         global train_df, test_df, btn_train, btn_test
         try:
             train_pct_str = entry_train_pct.get()
@@ -118,8 +120,8 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
             btn_test = ttk.Button(frame_vista, text="Ver Conjunto de Test")
             btn_todos = ttk.Button(frame_vista, text="Ver Todos los Datos")
 
-            btn_train.config(command=lambda: ver_conjunto(train_df, btn_train, btn_test))
-            btn_test.config(command=lambda: ver_conjunto(test_df, btn_test, btn_train))
+            btn_train.config(command=lambda: ver_conjunto(train_df))
+            btn_test.config(command=lambda: ver_conjunto(test_df))
             btn_todos.config(command=ver_todos_datos)
 
             btn_todos.pack(side=tk.LEFT, padx=5)

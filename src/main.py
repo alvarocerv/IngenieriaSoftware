@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, messagebox
 import threading
 import math
 
@@ -31,6 +31,7 @@ progress_running = False
 progress_angle = 0
 
 def animate_wave_progress():
+    """Animación de barra de progreso tipo onda"""
     global progress_angle
     if not progress_running:
         progress_bar['value'] = 0
@@ -41,29 +42,34 @@ def animate_wave_progress():
     ventana.after(30, animate_wave_progress)
 
 def start_progress():
+    """Inicia la animación de la barra de progreso"""
     global progress_running, progress_angle
     progress_running = True
     progress_angle = 0
     animate_wave_progress()
 
 def stop_progress():
+    """Detiene la animación de la barra de progreso"""
     global progress_running
     progress_running = False
     progress_bar['value'] = 0
 
 def set_dataframes(df_orig, df_sin_filtrar):
+    """Establece los dataframes originales globales"""
     global df_original, df_original_sin_filtrar
     df_original = df_orig
     df_original_sin_filtrar = df_sin_filtrar
 
-# Scroll global con trackpad
 def enable_global_scroll(canvas):
+    """Habilita el scroll global con trackpad en el canvas dado"""
     def _on_mousewheel(event):
+        """Maneja el scroll del mouse"""
         canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
     canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", _on_mousewheel))
     canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
 
 def mostrar_tabla(df):
+    """Muestra el DataFrame en la tabla de la interfaz"""
     global tree
     if df is None:
         return
@@ -80,6 +86,7 @@ def mostrar_tabla(df):
 
 # Flujo de pasos
 def iniciar_flujo_paso_1(df):
+    """Inicia el flujo de preprocesamiento desde el paso 1: selección de columnas"""
     global df_seleccionado
     for widget in frame_pasos_container.winfo_children():
         widget.destroy()
@@ -87,6 +94,7 @@ def iniciar_flujo_paso_1(df):
     frame_paso_1.pack(fill="x", padx=10, pady=10)
 
     def callback(df_resultante):
+        """Callback para manejar el resultado de la selección de columnas"""
         global df_seleccionado
         df_seleccionado = df_resultante
         mostrar_tabla(df_original)
@@ -98,6 +106,7 @@ def iniciar_flujo_paso_1(df):
     canvas_pasos.configure(scrollregion=canvas_pasos.bbox("all"))
 
 def iniciar_paso_2(df):
+    """Inicia el paso 2: manejo de datos inexistentes"""
     frame_paso_2 = ttk.LabelFrame(frame_pasos_container, text="Paso 2: Manejo de Datos Inexistentes", padding=10)
     frame_paso_2.pack(fill="x", padx=10, pady=10)
     manejo_datos_inexistentes(df, frame_paso_2, iniciar_paso_3)
@@ -105,6 +114,7 @@ def iniciar_paso_2(df):
     canvas_pasos.configure(scrollregion=canvas_pasos.bbox("all"))
 
 def iniciar_paso_3(df_procesado_local):
+    """Inicia el paso 3: separación de datos"""
     global df_procesado, df_original_sin_filtrar
     df_procesado = df_procesado_local
     mostrar_tabla(df_original)
@@ -116,6 +126,7 @@ def iniciar_paso_3(df_procesado_local):
     canvas_pasos.configure(scrollregion=canvas_pasos.bbox("all"))
 
 def iniciar_paso_4(train_df_local, test_df_local):
+    """Inicia el paso 4: creación de modelo"""
     global df_train, df_test
     df_train = train_df_local
     df_test = test_df_local
@@ -124,8 +135,8 @@ def iniciar_paso_4(train_df_local, test_df_local):
     # Inicia la animación de progreso
     start_progress()
 
-    # Ejecuta la creación del modelo en un hilo para no bloquear la interfaz
     def crear_modelo_hilo():
+        """Crea la interfaz de creación de modelo en un hilo separado"""
         dibujar_ui_model_creation(notebook_visor, df_train, df_test, guardar_modelo)
         # Una vez terminado, detiene la animación en el hilo principal
         ventana.after(0, stop_progress)
@@ -180,16 +191,15 @@ tab_visor.rowconfigure(1, weight=2)
 tab_visor.columnconfigure(0, weight=1)
 frame_tabla.grid(row=0, column=0, sticky="nsew")
 
-
-# Función que oculta o muestra paneles según la pestaña seleccionada
 def on_tab_change(event):
+    """Maneja el cambio de pestañas en el notebook para mostrar u ocultar paneles"""
     tab_id = notebook_visor.select()
     tab_text = notebook_visor.tab(tab_id, "text")
     
     if tab_text == "Datos Originales/Procesados":
         # Mostrar tabla y pasos
         frame_tabla.grid()
-        # restaurar panel de pasos si estaba oculto
+        # Restaurar panel de pasos si estaba oculto
         try:
             frame_pasos_wrapper.grid()
         except Exception:
@@ -203,7 +213,6 @@ def on_tab_change(event):
             pass
 
 notebook_visor.bind("<<NotebookTabChanged>>", on_tab_change)
-
 
 tree = ttk.Treeview(frame_tabla, show="headings")
 scroll_y = ttk.Scrollbar(frame_tabla, orient="vertical", command=tree.yview)
