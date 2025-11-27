@@ -300,31 +300,51 @@ enable_global_scroll(canvas_pasos)
 # Configurar comandos de botones después de que se hayan definido todos los widgets
 def _abrir_archivo_reset():
     """Reinicia la interfaz y carga datos nuevos en la primera pestaña."""
-    try:
-        # Eliminar todas las pestañas excepto "Datos Originales/Procesados"
-        for i in range(notebook_visor.index("end") - 1, -1, -1):
-            if notebook_visor.tab(i, "text") != "Datos Originales/Procesados":
-                notebook_visor.forget(i)
-        # Seleccionar la pestaña principal
-        for i in range(notebook_visor.index("end")):
-            if notebook_visor.tab(i, "text") == "Datos Originales/Procesados":
-                notebook_visor.select(i)
-                break
-        # Limpiar tabla
+    def hacer_reset():
+        """Ejecuta la limpieza solo después de confirmar selección de archivo."""
         try:
-            tree.delete(*tree.get_children())
+            # Eliminar todas las pestañas excepto "Datos Originales/Procesados"
+            for i in range(notebook_visor.index("end") - 1, -1, -1):
+                if notebook_visor.tab(i, "text") != "Datos Originales/Procesados":
+                    notebook_visor.forget(i)
+            # Seleccionar la pestaña principal
+            for i in range(notebook_visor.index("end")):
+                if notebook_visor.tab(i, "text") == "Datos Originales/Procesados":
+                    notebook_visor.select(i)
+                    break
+            # Limpiar tabla
+            try:
+                tree.delete(*tree.get_children())
+            except Exception:
+                pass
+            # Limpiar panel de pasos
+            for w in frame_pasos_container.winfo_children():
+                w.destroy()
         except Exception:
             pass
-        # Limpiar panel de pasos
-        for w in frame_pasos_container.winfo_children():
-            w.destroy()
+    
+    # Abrir archivo y pasar callback de reset
+    abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, iniciar_flujo_paso_1, ventana, set_dataframes, reset_callback=hacer_reset)
+
+def _cargar_modelo_reset():
+    """Vacía completamente la tabla de datos antes de cargar el modelo."""
+    try:
+        tree.delete(*tree.get_children())
+        tree["columns"] = []
+        tree.heading("#0", text="")
+        tree.column("#0", width=0, stretch=tk.NO)
     except Exception:
         pass
-    # Abrir archivo normalmente y reiniciar flujo
-    abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, iniciar_flujo_paso_1, ventana, set_dataframes)
+    try:
+        entrada_texto.delete(0, tk.END)
+        entrada_texto.insert(0, "Seleccione el archivo a cargar")
+        entrada_texto.config(fg="gray")
+    except Exception as e:
+        print(f"Error limpiando entrada_texto: {e}")
+    cargar_modelo(notebook_visor, frame_pasos_container)
 
 boton_abrir.config(command=_abrir_archivo_reset)
-boton_cargar_modelo.config(command=lambda: cargar_modelo(notebook_visor, frame_pasos_container))
+boton_cargar_modelo.config(command=_cargar_modelo_reset)
 
 # Mensaje de bienvenida al iniciar
 ventana.after(200, lambda: messagebox.showinfo("Visor y preprocesador de datos", 
