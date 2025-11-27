@@ -264,7 +264,32 @@ frame_tabla_notebook.pack(fill="both", expand=True, padx=10, pady=5)
 enable_global_scroll(canvas_pasos)
 
 # Configurar comandos de botones después de que se hayan definido todos los widgets
-boton_abrir.config(command=lambda: abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, iniciar_flujo_paso_1, ventana, set_dataframes))
+def _abrir_archivo_reset():
+    """Reinicia la interfaz y carga datos nuevos en la primera pestaña."""
+    try:
+        # Eliminar todas las pestañas excepto "Datos Originales/Procesados"
+        for i in range(notebook_visor.index("end") - 1, -1, -1):
+            if notebook_visor.tab(i, "text") != "Datos Originales/Procesados":
+                notebook_visor.forget(i)
+        # Seleccionar la pestaña principal
+        for i in range(notebook_visor.index("end")):
+            if notebook_visor.tab(i, "text") == "Datos Originales/Procesados":
+                notebook_visor.select(i)
+                break
+        # Limpiar tabla
+        try:
+            tree.delete(*tree.get_children())
+        except Exception:
+            pass
+        # Limpiar panel de pasos
+        for w in frame_pasos_container.winfo_children():
+            w.destroy()
+    except Exception:
+        pass
+    # Abrir archivo normalmente y reiniciar flujo
+    abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, iniciar_flujo_paso_1, ventana, set_dataframes)
+
+boton_abrir.config(command=_abrir_archivo_reset)
 boton_cargar_modelo.config(command=lambda: cargar_modelo(notebook_visor, frame_pasos_container))
 
 # Mensaje de bienvenida al iniciar
