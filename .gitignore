@@ -207,6 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 # src
-housing.csv
-housing.db
-housing.xlsx
+src\housing.csv
+src\housing.db
+src\housing.xlsx
