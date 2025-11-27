@@ -9,7 +9,8 @@ from model_manager import guardar_modelo, cargar_modelo
 from column_selection import lanzar_selector
 from nonexistent_data import manejo_datos_inexistentes
 from data_separation import iniciar_separacion
-from model_creation import dibujar_ui_model_creation
+from graphic_interface_model import dibujar_ui_model_creation
+from graphic_interface_predictions import dibujar_grafico_predicciones
 
 # Variables globales
 df_original = None
@@ -136,8 +137,22 @@ def iniciar_paso_4(train_df_local, test_df_local):
     start_progress()
 
     def crear_modelo_hilo():
-        """Crea la interfaz de creación de modelo en un hilo separado"""
-        dibujar_ui_model_creation(notebook_visor, df_train, df_test, guardar_modelo)
+        """Crea la interfaz de creación de modelo y la pestaña de predicciones en un hilo separado"""
+        # Crear pestaña de modelo
+        tab_modelo = ttk.Frame(notebook_visor)
+        notebook_visor.add(tab_modelo, text="Modelo")
+        # Entrenar el modelo y construir su interfaz (la pestaña Predicciones se añadirá solo cuando se pulse el botón)
+        dibujar_ui_model_creation(
+            tab_modelo,
+            notebook_visor,
+            df_train,
+            df_test,
+            guardar_callback=guardar_modelo
+        )
+        # Obtener nombres de columna de entrada y salida
+        columnas = list(df_train.columns)
+        columnas_numericas = [col for col in columnas if df_train[col].dtype.kind in 'fi']
+        # El gráfico se dibuja en on_model_ready; no repetir aquí
         # Una vez terminado, detiene la animación en el hilo principal
         ventana.after(0, stop_progress)
 
