@@ -37,7 +37,8 @@ def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(info_modelo, f, indent=4, ensure_ascii=False)
 
-        messagebox.showinfo("Modelo guardado", f"Guardado correctamente en:\n{file_path}")
+        desc_flag = "con descripción" if (descripcion and descripcion.strip()) else "sin descripción"
+        messagebox.showinfo("Modelo guardado", f"Guardado correctamente {desc_flag} en:\n{file_path}")
 
     except Exception as e:
         messagebox.showerror("Error al guardar", f"Ocurrió un error:\n{e}")

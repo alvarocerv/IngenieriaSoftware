@@ -89,6 +89,14 @@ def mostrar_tabla(df):
 def iniciar_flujo_paso_1(df):
     """Inicia el flujo de preprocesamiento desde el paso 1: selección de columnas"""
     global df_seleccionado
+    # Reiniciar secciones de pasos 2 y 3 si existían
+    try:
+        for child in list(frame_pasos_container.winfo_children()):
+            if isinstance(child, ttk.LabelFrame) and child.cget("text") in ("Paso 2: Manejo de Datos Inexistentes", "Paso 3: Separación de Datos"):
+                child.destroy()
+    except Exception:
+        pass
+    # Limpiar contenedor y preparar Paso 1
     for widget in frame_pasos_container.winfo_children():
         widget.destroy()
     frame_paso_1 = ttk.LabelFrame(frame_pasos_container, text="Paso 1: Selección de Columnas", padding=10)
@@ -108,6 +116,13 @@ def iniciar_flujo_paso_1(df):
 
 def iniciar_paso_2(df):
     """Inicia el paso 2: manejo de datos inexistentes"""
+    # Reiniciar secciones de pasos 2 y 3 si ya existen
+    try:
+        for child in list(frame_pasos_container.winfo_children()):
+            if isinstance(child, ttk.LabelFrame) and child.cget("text") in ("Paso 2: Manejo de Datos Inexistentes", "Paso 3: Separación de Datos"):
+                child.destroy()
+    except Exception:
+        pass
     frame_paso_2 = ttk.LabelFrame(frame_pasos_container, text="Paso 2: Manejo de Datos Inexistentes", padding=10)
     frame_paso_2.pack(fill="x", padx=10, pady=10)
     manejo_datos_inexistentes(df, frame_paso_2, iniciar_paso_3)
@@ -120,6 +135,13 @@ def iniciar_paso_3(df_procesado_local):
     df_procesado = df_procesado_local
     mostrar_tabla(df_original)
     messagebox.showinfo("Paso 2 completado", "Preprocesado de datos inexistentes completado exitosamente.")
+    # Reiniciar ventana/sección de separación de datos si ya existe para evitar duplicados
+    try:
+        for child in list(frame_pasos_container.winfo_children()):
+            if isinstance(child, ttk.LabelFrame) and child.cget("text") == "Paso 3: Separación de Datos":
+                child.destroy()
+    except Exception:
+        pass
     frame_paso_3 = ttk.LabelFrame(frame_pasos_container, text="Paso 3: Separación de Datos", padding=10)
     frame_paso_3.pack(fill="x", padx=10, pady=10)
     iniciar_separacion(df_procesado, frame_paso_3, mostrar_tabla, iniciar_paso_4, df_original=df_original_sin_filtrar)
@@ -138,6 +160,18 @@ def iniciar_paso_4(train_df_local, test_df_local):
 
     def crear_modelo_hilo():
         """Crea la interfaz de creación de modelo y la pestaña de predicciones en un hilo separado"""
+        # Reiniciar pestañas: mantener solo la pestaña de datos
+        try:
+            for i in range(notebook_visor.index("end") - 1, -1, -1):
+                if notebook_visor.tab(i, "text") != "Datos Originales/Procesados":
+                    notebook_visor.forget(i)
+            # Seleccionar pestaña de datos
+            for i in range(notebook_visor.index("end")):
+                if notebook_visor.tab(i, "text") == "Datos Originales/Procesados":
+                    notebook_visor.select(i)
+                    break
+        except Exception:
+            pass
         # Crear pestaña de modelo
         tab_modelo = ttk.Frame(notebook_visor)
         notebook_visor.add(tab_modelo, text="Modelo")
