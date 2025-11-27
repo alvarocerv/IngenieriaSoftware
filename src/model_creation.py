@@ -45,10 +45,8 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
         _mousebind_installed = True
 
-    # Descripción
-    ttk.Label(frame_content, text="Descripción del Modelo:", font=("Arial", 11, "bold")).pack(pady=(10,5))
-    txt_descripcion = tk.Text(frame_content, height=4, width=70)
-    txt_descripcion.pack(padx=10, pady=5)
+    # Preparar referencia para descripción (se ubicará después de métricas y gráfico)
+    txt_descripcion = None
 
     prediction_frame_ref = [None]
 
@@ -132,7 +130,12 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
     else:
         ttk.Label(frame_content, text="No se puede graficar múltiples variables.").pack(pady=10)
 
-    # Botón guardar
+    # Colocar área de descripción debajo de métricas y gráfico
+    ttk.Label(frame_content, text="Descripción del Modelo:", font=("Arial", 11, "bold")).pack(pady=(10,5))
+    txt_descripcion = tk.Text(frame_content, height=4, width=70)
+    txt_descripcion.pack(padx=10, pady=5)
+
+    # Botón guardar (usa la descripción ubicada debajo)
     if guardar_callback:
         metricas = {"r2_train": r2_train, "r2_test": r2_test,
                     "ecm_train": ecm_train, "ecm_test": ecm_test}
