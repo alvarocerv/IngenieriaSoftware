@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import math
+import pandas as pd
 
 def lanzar_selector(df, parent_frame, on_confirm_callback, on_selection_change_callback=None):
     for w in parent_frame.winfo_children():
@@ -28,6 +29,28 @@ def lanzar_selector(df, parent_frame, on_confirm_callback, on_selection_change_c
             return
         if salida in entradas:
             messagebox.showerror("Error", "La salida no puede ser una entrada.")
+            return
+
+        # Validar que todas las columnas seleccionadas solo contengan valores numéricos o vacíos
+        columnas_no_numericas = []
+        todas_columnas = entradas + [salida]
+        
+        for col in todas_columnas:
+            # Obtener valores no nulos de la columna
+            valores_no_nulos = df[col].dropna()
+            
+            # Intentar convertir a numérico
+            try:
+                # Si no se puede convertir, pandas lanzará un error
+                pd.to_numeric(valores_no_nulos, errors='raise')
+            except (ValueError, TypeError):
+                columnas_no_numericas.append(col)
+        
+        if columnas_no_numericas:
+            mensaje_error = "Las siguientes columnas contienen valores no numéricos:\n\n"
+            mensaje_error += "\n".join(f"• {col}" for col in columnas_no_numericas)
+            mensaje_error += "\n\nPor favor, selecciona solo columnas con valores numéricos o vacíos."
+            messagebox.showerror("Error de validación", mensaje_error)
             return
 
         df_sel = df[entradas + [salida]].copy()
