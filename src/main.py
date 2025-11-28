@@ -81,7 +81,8 @@ def mostrar_tabla(df):
     tree.column("#0", width=0, stretch=tk.NO)
     for col in columnas:
         tree.heading(col, text=col)
-        tree.column(col, width=120, anchor="w")
+        # Ancho fijo sin stretch para que funcione el scroll horizontal
+        tree.column(col, width=150, stretch=False, anchor="w")
     for _, fila in df.head(1000).iterrows():
         tree.insert("", "end", values=list(fila))
 
@@ -272,6 +273,16 @@ scroll_y.grid(row=0, column=1, sticky="ns")
 scroll_x.grid(row=1, column=0, sticky="ew")
 frame_tabla.rowconfigure(0, weight=1)
 frame_tabla.columnconfigure(0, weight=1)
+
+# Habilitar scroll horizontal con rueda del mouse (Shift + rueda)
+def _on_treeview_scroll(event):
+    if event.state & 0x1:  # Shift presionado
+        tree.xview_scroll(int(-1 * (event.delta / 120)), "units")
+    else:
+        tree.yview_scroll(int(-1 * (event.delta / 120)), "units")
+    return "break"
+
+tree.bind("<MouseWheel>", _on_treeview_scroll)
 
 # Panel de pasos scrollable dentro de la pestaña para poder dimensionarlo junto a la tabla
 frame_pasos_wrapper = ttk.Frame(tab_visor)
