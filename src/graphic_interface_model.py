@@ -6,25 +6,18 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import threading
 import time
+import pandas as pd
+from graphic_interface_predictions import dibujar_grafico_predicciones
 
-_mousebind_installed = False
+_mousebind_installed = False  # ya no se usará para binding global, mantenido por compatibilidad
 
-def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callback=None,
-                              start_progress=None, stop_progress=None):
-    """Crea la interfaz de creación de modelo en un hilo separado"""
+def dibujar_ui_model_creation(tab_modelo, notebook_visor, train_df, test_df, guardar_callback=None,
+                              start_progress=None, stop_progress=None,
+                              tab_predicciones=None):
+    """Crea la interfaz de creación de modelo dentro del Frame de la pestaña provisto"""
     global _mousebind_installed
 
-    # Eliminar pestaña anterior si existe
-    for i in range(notebook_visor.index("end")):
-        if notebook_visor.tab(i, "text") == "Modelo":
-            notebook_visor.forget(i)
-            break
-
-    tab_modelo = ttk.Frame(notebook_visor)
-    notebook_visor.add(tab_modelo, text="Modelo")
-    notebook_visor.select(tab_modelo)
-
-    # Scrollable frame
+    # Scrollable frame dentro de la pestaña recibida
     canvas = tk.Canvas(tab_modelo)
     scrollbar_v = ttk.Scrollbar(tab_modelo, orient="vertical", command=canvas.yview)
     scrollbar_h = ttk.Scrollbar(tab_modelo, orient="horizontal", command=canvas.xview)
@@ -37,20 +30,22 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
     frame_content.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
     canvas.bind("<Configure>", lambda e: canvas.itemconfig(frame_id, width=e.width))
 
-    # Scroll con rueda del mouse
+    # Scroll con rueda del mouse (binding por entrada/salida para no interferir con otras pestañas)
     def _on_mousewheel(event):
-        if hasattr(event, 'delta'):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-    if not _mousebind_installed:
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
-        _mousebind_installed = True
+        if event.delta:
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), 'units')
+    def _bind_wheel(_):
+        canvas.bind_all('<MouseWheel>', _on_mousewheel)
+    def _unbind_wheel(_):
+        canvas.unbind_all('<MouseWheel>')
+    canvas.bind('<Enter>', _bind_wheel)
+    canvas.bind('<Leave>', _unbind_wheel)
 
-    # Preparar referencia para descripción (se ubicará después de métricas y gráfico)
+    # La descripción se ubicará debajo de métricas y gráfico
     txt_descripcion = None
 
     prediction_frame_ref = [None]
 
-    resultado_modelo = {'modelo': None}
     def crear_modelo_thread():
         """Crea el modelo en un hilo separado para no bloquear la interfaz"""
         if start_progress: start_progress()
@@ -76,25 +71,26 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
             r2_test = r2_score(y_test, y_pred_test)
             ecm_test = mean_squared_error(y_test, y_pred_test)
 
-            resultado_modelo['modelo'] = model
-
-            frame_content.after(0, lambda: mostrar_resultados(frame_content, model, input_cols, output_col,
-                                                              y_pred_train, y_pred_test,
-                                                              r2_train, ecm_train, r2_test, ecm_test,
-                                                              prediction_frame_ref, train_df, test_df,
-                                                              txt_descripcion, guardar_callback))
+            def _render():
+                mostrar_resultados(frame_content, model, input_cols, output_col,
+                                   y_pred_train, y_pred_test,
+                                   r2_train, ecm_train, r2_test, ecm_test,
+                                   prediction_frame_ref, train_df, test_df,
+                                   txt_descripcion, guardar_callback,
+                                   tab_predicciones=tab_predicciones,
+                                   notebook_visor=notebook_visor)
+            frame_content.after(0, _render)
         except Exception as e:
             frame_content.after(0, lambda: messagebox.showerror("Error en Modelo", f"Ocurrió un error:\n{e}"))
         finally:
             if stop_progress: stop_progress()
+        
     threading.Thread(target=crear_modelo_thread, daemon=True).start()
-    # Esperar a que el modelo esté entrenado (solo para integración con el gráfico)
-    # En GUI real, deberías usar un callback/evento, pero aquí devolvemos el modelo si está disponible
-    return resultado_modelo['modelo']
-
+        
 def mostrar_resultados(frame_content, model, input_cols, output_col,
                        y_pred_train, y_pred_test, r2_train, ecm_train, r2_test, ecm_test,
-                       prediction_frame_ref, train_df, test_df, txt_descripcion, guardar_callback):
+                       prediction_frame_ref, train_df, test_df, txt_descripcion, guardar_callback,
+                       tab_predicciones=None, notebook_visor=None):
     """Muestra los resultados del modelo en la interfaz"""
     
     # Título y descripción
@@ -130,19 +126,52 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
     else:
         ttk.Label(frame_content, text="No se puede graficar múltiples variables.").pack(pady=10)
 
-    # Colocar área de descripción debajo de métricas y gráfico
+    # Descripción debajo de métricas y gráfico
     ttk.Label(frame_content, text="Descripción del Modelo:", font=("Arial", 11, "bold")).pack(pady=(10,5))
     txt_descripcion = tk.Text(frame_content, height=4, width=70)
     txt_descripcion.pack(padx=10, pady=5)
 
-    # Botón guardar (usa la descripción ubicada debajo)
+    # Botones acciones (Guardar / Predicciones) debajo de la descripción
+    botones_frame = ttk.Frame(frame_content)
+    botones_frame.pack(pady=10)
     if guardar_callback:
         metricas = {"r2_train": r2_train, "r2_test": r2_test,
                     "ecm_train": ecm_train, "ecm_test": ecm_test}
-        ttk.Button(frame_content, text="Guardar Modelo",
+        ttk.Button(botones_frame, text="Guardar Modelo",
                    command=lambda: guardar_callback(model, input_cols, output_col,
                                                     txt_descripcion.get("1.0",tk.END).strip(),
-                                                    metricas)).pack(pady=10)
+                                                    metricas)).pack(side="left", padx=5)
+    # Botón para mostrar predicciones
+    pred_tab_ref = [tab_predicciones]
+    def _mostrar_predicciones():
+        """Crear la pestaña de predicciones solo al hacer clic, si no existe"""
+        if pred_tab_ref[0] is None:
+            if notebook_visor is None:
+                messagebox.showerror("Predicciones", "No se puede crear la pestaña de predicciones (notebook no disponible).")
+                return
+            pred_tab_ref[0] = ttk.Frame(notebook_visor)
+            notebook_visor.add(pred_tab_ref[0], text="Predicciones")
+        tab_pred = pred_tab_ref[0]
+        if len(input_cols) != 1:
+            messagebox.showinfo("Predicciones", "El gráfico solo se muestra para una única columna de entrada.")
+            return
+        # Limpiar contenido previo
+        for w in tab_pred.winfo_children():
+            w.destroy()
+        dibujar_grafico_predicciones(tab_pred, model, test_df, input_cols[0], output_col)
+        # Seleccionar la pestaña de predicciones inmediatamente
+        try:
+            notebook_visor.select(tab_pred)
+        except Exception:
+            pass
+    # Botón Mostrar Predicciones (se deshabilita tras primer uso)
+    btn_predicciones = ttk.Button(botones_frame, text="Mostrar Predicciones", command=_mostrar_predicciones)
+    btn_predicciones.pack(side="left", padx=5)
+    # Reemplazar la función para que pueda deshabilitar el botón tras ejecución
+    def _wrap_mostrar():
+        _mostrar_predicciones()
+        btn_predicciones.config(state="disabled")
+    btn_predicciones.configure(command=_wrap_mostrar)
 
     # Predicción interactiva
     if prediction_frame_ref[0] is not None:
@@ -172,7 +201,9 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
         """Ejecuta la predicción usando el modelo con los valores ingresados"""
         try:
             valores = [float(input_entries[col].get()) for col in input_cols]
-            pred = model.predict([valores])[0]
+            # Usar DataFrame para preservar nombres y evitar warnings
+            valores_df = pd.DataFrame([valores], columns=input_cols)
+            pred = model.predict(valores_df)[0]
             lbl_resultado_pred.config(text=f"{pred:.4f}")
         except Exception as e:
             messagebox.showerror("Error", f"Error al predecir: {e}")

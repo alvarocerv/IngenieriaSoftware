@@ -9,7 +9,8 @@ from model_manager import guardar_modelo, cargar_modelo
 from column_selection import lanzar_selector
 from nonexistent_data import manejo_datos_inexistentes
 from data_separation import iniciar_separacion
-from model_creation import dibujar_ui_model_creation
+from graphic_interface_model import dibujar_ui_model_creation
+from graphic_interface_predictions import dibujar_grafico_predicciones
 
 # Variables globales
 df_original = None
@@ -80,7 +81,8 @@ def mostrar_tabla(df):
     tree.column("#0", width=0, stretch=tk.NO)
     for col in columnas:
         tree.heading(col, text=col)
-        tree.column(col, width=120, anchor="w")
+        # Ancho fijo sin stretch para que funcione el scroll horizontal
+        tree.column(col, width=150, stretch=False, anchor="w")
     for _, fila in df.head(1000).iterrows():
         tree.insert("", "end", values=list(fila))
 
@@ -88,6 +90,14 @@ def mostrar_tabla(df):
 def iniciar_flujo_paso_1(df):
     """Inicia el flujo de preprocesamiento desde el paso 1: selección de columnas"""
     global df_seleccionado
+    # Reiniciar secciones de pasos 2 y 3 si existían
+    try:
+        for child in list(frame_pasos_container.winfo_children()):
+            if isinstance(child, ttk.LabelFrame) and child.cget("text") in ("Paso 2: Manejo de Datos Inexistentes", "Paso 3: Separación de Datos"):
+                child.destroy()
+    except Exception:
+        pass
+    # Limpiar contenedor y preparar Paso 1
     for widget in frame_pasos_container.winfo_children():
         widget.destroy()
     frame_paso_1 = ttk.LabelFrame(frame_pasos_container, text="Paso 1: Selección de Columnas", padding=10)
@@ -107,6 +117,13 @@ def iniciar_flujo_paso_1(df):
 
 def iniciar_paso_2(df):
     """Inicia el paso 2: manejo de datos inexistentes"""
+    # Reiniciar secciones de pasos 2 y 3 si ya existen
+    try:
+        for child in list(frame_pasos_container.winfo_children()):
+            if isinstance(child, ttk.LabelFrame) and child.cget("text") in ("Paso 2: Manejo de Datos Inexistentes", "Paso 3: Separación de Datos"):
+                child.destroy()
+    except Exception:
+        pass
     frame_paso_2 = ttk.LabelFrame(frame_pasos_container, text="Paso 2: Manejo de Datos Inexistentes", padding=10)
     frame_paso_2.pack(fill="x", padx=10, pady=10)
     manejo_datos_inexistentes(df, frame_paso_2, iniciar_paso_3)
@@ -119,6 +136,13 @@ def iniciar_paso_3(df_procesado_local):
     df_procesado = df_procesado_local
     mostrar_tabla(df_original)
     messagebox.showinfo("Paso 2 completado", "Preprocesado de datos inexistentes completado exitosamente.")
+    # Reiniciar ventana/sección de separación de datos si ya existe para evitar duplicados
+    try:
+        for child in list(frame_pasos_container.winfo_children()):
+            if isinstance(child, ttk.LabelFrame) and child.cget("text") == "Paso 3: Separación de Datos":
+                child.destroy()
+    except Exception:
+        pass
     frame_paso_3 = ttk.LabelFrame(frame_pasos_container, text="Paso 3: Separación de Datos", padding=10)
     frame_paso_3.pack(fill="x", padx=10, pady=10)
     iniciar_separacion(df_procesado, frame_paso_3, mostrar_tabla, iniciar_paso_4, df_original=df_original_sin_filtrar)
@@ -136,8 +160,34 @@ def iniciar_paso_4(train_df_local, test_df_local):
     start_progress()
 
     def crear_modelo_hilo():
-        """Crea la interfaz de creación de modelo en un hilo separado"""
-        dibujar_ui_model_creation(notebook_visor, df_train, df_test, guardar_modelo)
+        """Crea la interfaz de creación de modelo y la pestaña de predicciones en un hilo separado"""
+        # Reiniciar pestañas: mantener solo la pestaña de datos
+        try:
+            for i in range(notebook_visor.index("end") - 1, -1, -1):
+                if notebook_visor.tab(i, "text") != "Datos Originales/Procesados":
+                    notebook_visor.forget(i)
+            # Seleccionar pestaña de datos
+            for i in range(notebook_visor.index("end")):
+                if notebook_visor.tab(i, "text") == "Datos Originales/Procesados":
+                    notebook_visor.select(i)
+                    break
+        except Exception:
+            pass
+        # Crear pestaña de modelo
+        tab_modelo = ttk.Frame(notebook_visor)
+        notebook_visor.add(tab_modelo, text="Modelo")
+        # Entrenar el modelo y construir su interfaz (la pestaña Predicciones se añadirá solo cuando se pulse el botón)
+        dibujar_ui_model_creation(
+            tab_modelo,
+            notebook_visor,
+            df_train,
+            df_test,
+            guardar_callback=guardar_modelo
+        )
+        # Obtener nombres de columna de entrada y salida
+        columnas = list(df_train.columns)
+        columnas_numericas = [col for col in columnas if df_train[col].dtype.kind in 'fi']
+        # El gráfico se dibuja en on_model_ready; no repetir aquí
         # Una vez terminado, detiene la animación en el hilo principal
         ventana.after(0, stop_progress)
 
@@ -224,6 +274,16 @@ scroll_x.grid(row=1, column=0, sticky="ew")
 frame_tabla.rowconfigure(0, weight=1)
 frame_tabla.columnconfigure(0, weight=1)
 
+# Habilitar scroll horizontal con rueda del mouse (Shift + rueda)
+def _on_treeview_scroll(event):
+    if event.state & 0x1:  # Shift presionado
+        tree.xview_scroll(int(-1 * (event.delta / 120)), "units")
+    else:
+        tree.yview_scroll(int(-1 * (event.delta / 120)), "units")
+    return "break"
+
+tree.bind("<MouseWheel>", _on_treeview_scroll)
+
 # Panel de pasos scrollable dentro de la pestaña para poder dimensionarlo junto a la tabla
 frame_pasos_wrapper = ttk.Frame(tab_visor)
 frame_pasos_wrapper.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
@@ -249,8 +309,53 @@ frame_tabla_notebook.pack(fill="both", expand=True, padx=10, pady=5)
 enable_global_scroll(canvas_pasos)
 
 # Configurar comandos de botones después de que se hayan definido todos los widgets
-boton_abrir.config(command=lambda: abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, iniciar_flujo_paso_1, ventana, set_dataframes))
-boton_cargar_modelo.config(command=lambda: cargar_modelo(notebook_visor, frame_pasos_container))
+def _abrir_archivo_reset():
+    """Reinicia la interfaz y carga datos nuevos en la primera pestaña."""
+    def hacer_reset():
+        """Ejecuta la limpieza solo después de confirmar selección de archivo."""
+        try:
+            # Eliminar todas las pestañas excepto "Datos Originales/Procesados"
+            for i in range(notebook_visor.index("end") - 1, -1, -1):
+                if notebook_visor.tab(i, "text") != "Datos Originales/Procesados":
+                    notebook_visor.forget(i)
+            # Seleccionar la pestaña principal
+            for i in range(notebook_visor.index("end")):
+                if notebook_visor.tab(i, "text") == "Datos Originales/Procesados":
+                    notebook_visor.select(i)
+                    break
+            # Limpiar tabla
+            try:
+                tree.delete(*tree.get_children())
+            except Exception:
+                pass
+            # Limpiar panel de pasos
+            for w in frame_pasos_container.winfo_children():
+                w.destroy()
+        except Exception:
+            pass
+    
+    # Abrir archivo y pasar callback de reset
+    abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, iniciar_flujo_paso_1, ventana, set_dataframes, reset_callback=hacer_reset)
+
+def _cargar_modelo_reset():
+    """Vacía completamente la tabla de datos antes de cargar el modelo."""
+    try:
+        tree.delete(*tree.get_children())
+        tree["columns"] = []
+        tree.heading("#0", text="")
+        tree.column("#0", width=0, stretch=tk.NO)
+    except Exception:
+        pass
+    try:
+        entrada_texto.delete(0, tk.END)
+        entrada_texto.insert(0, "Seleccione el archivo a cargar")
+        entrada_texto.config(fg="gray")
+    except Exception as e:
+        print(f"Error limpiando entrada_texto: {e}")
+    cargar_modelo(notebook_visor, frame_pasos_container)
+
+boton_abrir.config(command=_abrir_archivo_reset)
+boton_cargar_modelo.config(command=_cargar_modelo_reset)
 
 # Mensaje de bienvenida al iniciar
 ventana.after(200, lambda: messagebox.showinfo("Visor y preprocesador de datos", 

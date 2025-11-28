@@ -38,7 +38,7 @@ def cargar_dataset(file_path):
     return None
 
 
-def abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, iniciar_flujo_paso_1, ventana, set_dataframes):
+def abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, iniciar_flujo_paso_1, ventana, set_dataframes, reset_callback=None):
     """Abre un cuadro de diálogo para seleccionar un archivo de datos, lo carga y actualiza la interfaz"""
     ruta = filedialog.askopenfilename(
         title="Seleccionar archivo de datos", 
@@ -47,6 +47,10 @@ def abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, i
     if not ruta:
         messagebox.showinfo("Carga cancelada", "La carga de archivo fue cancelada.")
         return
+    
+    # Ejecutar reset solo después de confirmar que hay archivo seleccionado
+    if reset_callback:
+        reset_callback()
     
     entrada_texto.config(state="normal")
     entrada_texto.delete(0, tk.END)

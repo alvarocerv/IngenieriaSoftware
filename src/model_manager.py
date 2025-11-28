@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import json
-
+import joblib
+import pickle
 
 def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
     """Guarda el modelo en un archivo JSON seleccionado por el usuario"""
@@ -37,35 +38,65 @@ def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(info_modelo, f, indent=4, ensure_ascii=False)
 
-        messagebox.showinfo("Modelo guardado", f"Guardado correctamente en:\n{file_path}")
+        desc_flag = "con descripción" if (descripcion and descripcion.strip()) else "sin descripción"
+        messagebox.showinfo("Modelo guardado", f"Guardado correctamente {desc_flag} en:\n{file_path}")
 
     except Exception as e:
         messagebox.showerror("Error al guardar", f"Ocurrió un error:\n{e}")
 
 
 def cargar_modelo(notebook_visor, frame_pasos_container):
-    """Carga un modelo desde un archivo JSON seleccionado por el usuario y actualiza la interfaz"""
+    """Carga un modelo desde un archivo JSON, joblib o pkl seleccionado por el usuario y actualiza la interfaz"""
     ruta = filedialog.askopenfilename(
         title="Cargar Modelo",
-        filetypes=[("Modelo JSON", ".json"), ("Todos los archivos", ".*")]
+        filetypes=[("Modelo JSON", "*.json"), ("Modelo Joblib", "*.joblib"), ("Modelo Pickle", "*.pkl"), ("Todos los archivos", "*.*")]
     )
     if not ruta:
         return
 
-    try:
-        with open(ruta, "r", encoding="utf-8") as f:
-            info = json.load(f)
-    except Exception as e:
-        messagebox.showerror("Error", f"El archivo no es válido o está corrupto:\n{e}")
-        return
+    # Detectar formato del archivo
+    if ruta.endswith('.json'):
+        try:
+            with open(ruta, "r", encoding="utf-8") as f:
+                info = json.load(f)
+        except Exception as e:
+            messagebox.showerror("Error", f"El archivo no es válido o está corrupto:\n{e}")
+            return
 
-    # Validación mínima
-    campos_requeridos = ["descripcion", "entradas", "salida", "formula",
-                         "coeficientes", "intercepto", "metricas"]
+        # Validación mínima
+        campos_requeridos = ["descripcion", "entradas", "salida", "formula",
+                             "coeficientes", "intercepto", "metricas"]
 
-    if not all(c in info for c in campos_requeridos):
-        messagebox.showerror("Modelo inválido",
-                             "El archivo no contiene los datos requeridos para un modelo válido.")
+        if not all(c in info for c in campos_requeridos):
+            messagebox.showerror("Modelo inválido",
+                                 "El archivo no contiene los datos requeridos para un modelo válido.")
+            return
+    
+    elif ruta.endswith('.joblib') or ruta.endswith('.pkl'):
+        try:
+            if ruta.endswith('.joblib'):
+                info = joblib.load(ruta)
+            else:
+                with open(ruta, 'rb') as f:
+                    info = pickle.load(f)
+            
+            # Validación para formato joblib/pickle
+            if not isinstance(info, dict):
+                messagebox.showerror("Modelo inválido", "El archivo no contiene un diccionario válido.")
+                return
+            
+            campos_requeridos = ["descripcion", "entradas", "salida", "formula",
+                                 "coeficientes", "intercepto", "metricas"]
+            
+            if not all(c in info for c in campos_requeridos):
+                messagebox.showerror("Modelo inválido",
+                                     "El archivo no contiene los datos requeridos para un modelo válido.")
+                return
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al cargar el archivo:\n{e}")
+            return
+    else:
+        messagebox.showerror("Formato no soportado", "Solo se soportan archivos .json, .joblib y .pkl")
         return
 
     # Ocultar flujo inferior
