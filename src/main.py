@@ -27,6 +27,7 @@ frame_pasos_wrapper = None
 notebook_visor = None
 progress_bar = None
 entrada_texto = None
+tab_modelo = None
 
 # Variables para trackear columnas seleccionadas
 columnas_entrada_seleccionadas = []
@@ -178,7 +179,20 @@ def mostrar_tabla(df, columnas_entrada=None, columna_salida=None):
 # Flujo de pasos
 def iniciar_flujo_paso_1(df):
     """Inicia el flujo de preprocesamiento desde el paso 1: selección de columnas"""
-    global df_seleccionado, columnas_entrada_seleccionadas, columna_salida_seleccionada
+    global df_seleccionado, columnas_entrada_seleccionadas, columna_salida_seleccionada, tab_modelo
+    
+    # Borrar la pestaña del modelo si existe
+    try:
+        if tab_modelo is not None:
+            # Buscar el índice de la pestaña del modelo
+            for i in range(notebook_visor.index('end')):
+                if notebook_visor.tab(i, 'text') == 'Modelo':
+                    notebook_visor.forget(i)
+                    break
+            tab_modelo = None
+    except Exception as e:
+        print(f"Error al borrar pestaña del modelo: {e}")
+    
     # Reiniciar secciones de pasos 2 y 3 si existían
     try:
         for child in list(frame_pasos_container.winfo_children()):
@@ -202,7 +216,20 @@ def iniciar_flujo_paso_1(df):
 
     def callback(df_resultante, columnas_entrada, columna_salida):
         """Callback para manejar el resultado de la selección de columnas"""
-        global df_seleccionado, columnas_entrada_seleccionadas, columna_salida_seleccionada
+        global df_seleccionado, columnas_entrada_seleccionadas, columna_salida_seleccionada, tab_modelo
+        
+        # Borrar la pestaña del modelo si existe (ya que se van a seleccionar nuevas columnas)
+        try:
+            if tab_modelo is not None:
+                # Buscar el índice de la pestaña del modelo
+                for i in range(notebook_visor.index('end')):
+                    if notebook_visor.tab(i, 'text') == 'Modelo':
+                        notebook_visor.forget(i)
+                        break
+                tab_modelo = None
+        except Exception as e:
+            print(f"Error al borrar pestaña del modelo: {e}")
+        
         df_seleccionado = df_resultante
         columnas_entrada_seleccionadas = columnas_entrada
         columna_salida_seleccionada = columna_salida
@@ -274,6 +301,7 @@ def iniciar_paso_4(train_df_local, test_df_local):
         except Exception:
             pass
         # Crear pestaña de modelo
+        global tab_modelo
         tab_modelo = ttk.Frame(notebook_visor)
         notebook_visor.add(tab_modelo, text="Modelo")
         # Entrenar el modelo y construir su interfaz (la pestaña Predicciones se añadirá solo cuando se pulse el botón)
