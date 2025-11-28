@@ -2,12 +2,19 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import math
 
-def lanzar_selector(df, parent_frame, on_confirm_callback):
+def lanzar_selector(df, parent_frame, on_confirm_callback, on_selection_change_callback=None):
     for w in parent_frame.winfo_children():
         w.destroy()
 
     columns = list(df.columns)
     salida_var = tk.StringVar(value="")
+
+    def actualizar_seleccion(*args):
+        """Callback que se ejecuta cada vez que cambia una selección"""
+        if on_selection_change_callback:
+            entradas = [c for c, v in check_vars_inputs.items() if v.get()]
+            salida = salida_var.get()
+            on_selection_change_callback(entradas, salida if salida else None)
 
     def confirmar_seleccion():
         entradas = [c for c, v in check_vars_inputs.items() if v.get()]
@@ -24,7 +31,7 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
             return
 
         df_sel = df[entradas + [salida]].copy()
-        on_confirm_callback(df_sel)
+        on_confirm_callback(df_sel, entradas, salida)
 
     ttk.Label(parent_frame, text="Selecciona columnas", font=("Arial", 12, "bold")).pack(pady=5)
 
@@ -100,7 +107,12 @@ def lanzar_selector(df, parent_frame, on_confirm_callback):
     # Inicializar check_vars
     for cname in columns:
         check_vars_inputs[cname] = tk.BooleanVar()
+        # Agregar trace para detectar cambios
+        check_vars_inputs[cname].trace_add('write', actualizar_seleccion)
         check_vars_output[cname] = tk.BooleanVar()
+    
+    # Agregar trace a la variable de salida
+    salida_var.trace_add('write', actualizar_seleccion)
 
     # Llamar a la distribución cuando se cambie tamaño
     frame_inputs.bind("<Configure>", lambda e: distribuir_checkboxes())
