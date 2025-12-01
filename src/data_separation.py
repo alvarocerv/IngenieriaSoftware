@@ -25,25 +25,25 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
                 train_pct = float(val)
                 if 0 < train_pct < 100:
                     test_pct = 100 - train_pct
-                    label_test_pct.config(text=f"Porcentaje de Test: {test_pct:.1f}%")
+                    label_test_pct.config(text=f"Porcentaxe de Test: {test_pct:.1f}%")
                 else:
-                    label_test_pct.config(text="Porcentaje de Test: --")
+                    label_test_pct.config(text="Porcentaxe de Test: --")
             else:
-                label_test_pct.config(text="Porcentaje de Test: --")
+                label_test_pct.config(text="Porcentaxe de Test: --")
         except ValueError:
-            label_test_pct.config(text="Porcentaje de Test: --")
+            label_test_pct.config(text="Porcentaxe de Test: --")
 
     train_pct_var.trace_add("write", actualizar_test_pct)
 
     # Campos de entrada
-    ttk.Label(frame_inputs, text="Porcentaje de Entrenamiento:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+    ttk.Label(frame_inputs, text="Porcentaxe de Entrenamento:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
     entry_train_pct = ttk.Entry(frame_inputs, textvariable=train_pct_var, width=10)
     entry_train_pct.grid(row=0, column=1, padx=5, pady=5)
 
-    label_test_pct = ttk.Label(frame_inputs, text="Porcentaje de Test:")
+    label_test_pct = ttk.Label(frame_inputs, text="Porcentaxe de Test:")
     label_test_pct.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="w")
 
-    ttk.Label(frame_inputs, text="Semilla (para la separación aleatoria):").grid(row=2, column=0, padx=5, pady=5,
+    ttk.Label(frame_inputs, text="Semente (para a separación aleatoria):").grid(row=2, column=0, padx=5, pady=5,
                                                                                  sticky="w")
     entry_seed = ttk.Entry(frame_inputs, width=10)
 
@@ -78,12 +78,12 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
             seed_str = entry_seed.get()
 
             if not train_pct_str:
-                messagebox.showerror("Error", "Debes rellenar al menos el campo de porcentaje.")
+                messagebox.showerror("Erro", "Debes encher polo menos o campo do porcentaxe.")
                 return
 
             train_pct = float(train_pct_str)
             if not (0 < train_pct < 100):
-                raise ValueError("El porcentaje debe estar entre 0 y 100.")
+                raise ValueError("O porcentaxe debe estar entre 0 e 100.")
 
             test_pct = 100 - train_pct
             seed = None
@@ -92,21 +92,21 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
             if seed_str.strip():
                 try:
                     seed = int(seed_str)
-                    msg_info = "Datos separados con semilla fija."
+                    msg_info = "Datos separados con semente fixa."
                 except ValueError:
-                    messagebox.showerror("Error", "La semilla aleatoria debe ser un número entero.")
+                    messagebox.showerror("Erro", "A semente aleatoria debe ser un número enteiro.")
                     return
 
             if len(df_procesado) < 5:
-                messagebox.showerror("Error", "No hay suficientes datos para realizar la separación (mínimo 5 filas).")
+                messagebox.showerror("Erro", "Non hai suficientes datos para realizar a separación (mínimo 5 filas).")
                 return
 
             train_df, test_df = train_test_split(df_procesado, test_size=test_pct / 100, random_state=seed)
 
             messagebox.showinfo("Separación Completada",
                                 f"{msg_info}\n\n"
-                                f"Conjunto de Entrenamiento: {len(train_df)} filas\n"
-                                f"Conjunto de Test: {len(test_df)} filas")
+                                f"Conxunto de Entrenamento: {len(train_df)} filas\n"
+                                f"Conxunto de Test: {len(test_df)} filas")
 
             # Ocultar widgets de input
             frame_inputs.pack_forget()
@@ -116,9 +116,9 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
             for widget in frame_vista.winfo_children():
                 widget.destroy()
 
-            btn_train = ttk.Button(frame_vista, text="Ver Conjunto de Entrenamiento")
-            btn_test = ttk.Button(frame_vista, text="Ver Conjunto de Test")
-            btn_todos = ttk.Button(frame_vista, text="Ver Todos los Datos")
+            btn_train = ttk.Button(frame_vista, text="Ver Conxunto de Entrenamento")
+            btn_test = ttk.Button(frame_vista, text="Ver Conxunto de Test")
+            btn_todos = ttk.Button(frame_vista, text="Ver Todos os Datos")
 
             btn_train.config(command=lambda: ver_conjunto(train_df))
             btn_test.config(command=lambda: ver_conjunto(test_df))
@@ -134,7 +134,7 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
                 callback(train_df, test_df)
 
         except ValueError as e:
-            messagebox.showerror("Error", f"Entrada inválida: {e}")
+            messagebox.showerror("Erro", f"Entrada inválida: {e}")
 
     # Botón para separar
     btn_separar = ttk.Button(frame_pasos_container, text="Separar Datos", command=separar_datos)

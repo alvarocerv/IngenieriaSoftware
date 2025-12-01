@@ -81,7 +81,7 @@ def dibujar_ui_model_creation(tab_modelo, notebook_visor, train_df, test_df, gua
                                    notebook_visor=notebook_visor)
             frame_content.after(0, _render)
         except Exception as e:
-            frame_content.after(0, lambda: messagebox.showerror("Error en Modelo", f"Ocurrió un error:\n{e}"))
+            frame_content.after(0, lambda: messagebox.showerror("Erro no Modelo", f"Ocurriu un erro:\n{e}"))
         finally:
             if stop_progress: stop_progress()
         
@@ -94,13 +94,13 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
     """Muestra los resultados del modelo en la interfaz"""
     
     # Título y descripción
-    ttk.Label(frame_content, text="Resultados del Modelo", font=("Arial", 12, "bold")).pack(pady=(10,5))
+    ttk.Label(frame_content, text="Resultados do Modelo", font=("Arial", 12, "bold")).pack(pady=(10,5))
     
     formula_str = f"{output_col} = " + " + ".join([f"({model.coef_[i]:.4f}*{col})" for i,col in enumerate(input_cols)]) + f" + ({model.intercept_:.4f})"
     ttk.Label(frame_content, text=f"Fórmula: {formula_str}", font=("Courier",10), wraplength=700).pack(pady=5, padx=10)
 
     # Métricas
-    cols = ("Métrica", "Entrenamiento", "Test")
+    cols = ("Métrica", "Entrenamento", "Test")
     tree_metrics = ttk.Treeview(frame_content, columns=cols, show="headings", height=2)
     for col in cols:
         tree_metrics.heading(col, text=col)
@@ -113,9 +113,9 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
     if len(input_cols) == 1:
         fig = plt.Figure(figsize=(6,4), dpi=100)
         ax = fig.add_subplot(111)
-        ax.scatter(train_df[input_cols[0]], train_df[output_col], label='Train', alpha=0.7)
+        ax.scatter(train_df[input_cols[0]], train_df[output_col], label='Entrenamento', alpha=0.7)
         ax.scatter(test_df[input_cols[0]], test_df[output_col], marker='x', label='Test')
-        ax.plot(train_df[input_cols[0]].values, y_pred_train, linewidth=2, label='Ajuste')
+        ax.plot(train_df[input_cols[0]].values, y_pred_train, linewidth=2, label='Axuste')
         ax.set_xlabel(input_cols[0])
         ax.set_ylabel(output_col)
         ax.legend()
@@ -124,10 +124,10 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
         canvas_fig.draw()
         canvas_fig.get_tk_widget().pack(side="top", fill="both", expand=True, padx=10, pady=5)
     else:
-        ttk.Label(frame_content, text="No se puede graficar múltiples variables.").pack(pady=10)
+        ttk.Label(frame_content, text="Non se poden graficar múltiples variables.").pack(pady=10)
 
     # Descripción debajo de métricas y gráfico
-    ttk.Label(frame_content, text="Descripción del Modelo:", font=("Arial", 11, "bold")).pack(pady=(10,5))
+    ttk.Label(frame_content, text="Descrición do Modelo:", font=("Arial", 11, "bold")).pack(pady=(10,5))
     txt_descripcion = tk.Text(frame_content, height=4, width=70)
     txt_descripcion.pack(padx=10, pady=5)
 
@@ -137,7 +137,7 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
     if guardar_callback:
         metricas = {"r2_train": r2_train, "r2_test": r2_test,
                     "ecm_train": ecm_train, "ecm_test": ecm_test}
-        ttk.Button(botones_frame, text="Guardar Modelo",
+        ttk.Button(botones_frame, text="Gardar Modelo",
                    command=lambda: guardar_callback(model, input_cols, output_col,
                                                     txt_descripcion.get("1.0",tk.END).strip(),
                                                     metricas)).pack(side="left", padx=5)
@@ -147,13 +147,13 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
         """Crear la pestaña de predicciones solo al hacer clic, si no existe"""
         if pred_tab_ref[0] is None:
             if notebook_visor is None:
-                messagebox.showerror("Predicciones", "No se puede crear la pestaña de predicciones (notebook no disponible).")
+                messagebox.showerror("Predicións", "Non se pode crear a pestaña de predicións (notebook non dispoñible).")
                 return
             pred_tab_ref[0] = ttk.Frame(notebook_visor)
-            notebook_visor.add(pred_tab_ref[0], text="Predicciones")
+            notebook_visor.add(pred_tab_ref[0], text="Predicións")
         tab_pred = pred_tab_ref[0]
         if len(input_cols) != 1:
-            messagebox.showinfo("Predicciones", "El gráfico solo se muestra para una única columna de entrada.")
+            messagebox.showinfo("Predicións", "O gráfico só se mostra para unha única columna de entrada.")
             return
         # Limpiar contenido previo
         for w in tab_pred.winfo_children():
@@ -165,7 +165,7 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
         except Exception:
             pass
     # Botón Mostrar Predicciones (se deshabilita tras primer uso)
-    btn_predicciones = ttk.Button(botones_frame, text="Mostrar Predicciones", command=_mostrar_predicciones)
+    btn_predicciones = ttk.Button(botones_frame, text="Mostrar Predicións", command=_mostrar_predicciones)
     btn_predicciones.pack(side="left", padx=5)
     # Reemplazar la función para que pueda deshabilitar el botón tras ejecución
     def _wrap_mostrar():
@@ -177,7 +177,7 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
     if prediction_frame_ref[0] is not None:
         prediction_frame_ref[0].destroy()
 
-    frame_pred = ttk.LabelFrame(frame_content, text="Predicción Interactiva", padding=10)
+    frame_pred = ttk.LabelFrame(frame_content, text="Predición Interactiva", padding=10)
     frame_pred.pack(fill="x", expand=True, pady=10, padx=10)
     prediction_frame_ref[0] = frame_pred
 
@@ -206,6 +206,6 @@ def mostrar_resultados(frame_content, model, input_cols, output_col,
             pred = model.predict(valores_df)[0]
             lbl_resultado_pred.config(text=f"{pred:.4f}")
         except Exception as e:
-            messagebox.showerror("Error", f"Error al predecir: {e}")
+            messagebox.showerror("Erro", f"Erro ao predicir: {e}")
 
-    ttk.Button(frame_pred, text="Calcular Predicción", command=ejecutar_prediccion).pack(pady=5, anchor="w")
+    ttk.Button(frame_pred, text="Calcular Predición", command=ejecutar_prediccion).pack(pady=5, anchor="w")

@@ -11,14 +11,14 @@ def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
         root.withdraw()
         file_path = filedialog.asksaveasfilename(
             parent=root,
-            title="Guardar Modelo",
+            title="Gardar Modelo",
             initialdir=".",
             defaultextension=".json",
-            filetypes=[("Archivo JSON", ".json"), ("Todos los archivos", ".*")]
+            filetypes=[("Arquivo JSON", ".json"), ("Todos os arquivos", ".*")]
         )
         root.destroy()
         if not file_path:
-            messagebox.showinfo("Guardado cancelado", "El guardado fue cancelado.")
+            messagebox.showinfo("Gardado cancelado", "O gardado foi cancelado.")
             return
 
         formula = f"{output_col} = " + " + ".join(
@@ -26,30 +26,29 @@ def guardar_modelo(modelo, input_cols, output_col, descripcion, metricas):
         ) + f" + ({modelo.intercept_:.6f})"
 
         info_modelo = {
-            "descripcion": descripcion,
+            "descrición": descripcion,
             "entradas": input_cols,
-            "salida": output_col,
-            "formula": formula,
+            "saída": output_col,
+            "fórmula": formula,
             "coeficientes": [float(c) for c in modelo.coef_],
             "intercepto": float(modelo.intercept_),
-            "metricas": metricas
+            "métricas": metricas
         }
 
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(info_modelo, f, indent=4, ensure_ascii=False)
 
-        desc_flag = "con descripción" if (descripcion and descripcion.strip()) else "sin descripción"
-        messagebox.showinfo("Modelo guardado", f"Guardado correctamente {desc_flag} en:\n{file_path}")
+        desc_flag = "con descrición" if (descripcion and descripcion.strip()) else "sen descrición"
+        messagebox.showinfo("Modelo gardado", f"Gardado correctamente {desc_flag} en:\n{file_path}")
 
     except Exception as e:
-        messagebox.showerror("Error al guardar", f"Ocurrió un error:\n{e}")
-
+        messagebox.showerror("Erro ao gardar", f"Produciuse un erro:\n{e}")
 
 def cargar_modelo(notebook_visor, frame_pasos_container):
     """Carga un modelo desde un archivo JSON, joblib o pkl seleccionado por el usuario y actualiza la interfaz"""
     ruta = filedialog.askopenfilename(
         title="Cargar Modelo",
-        filetypes=[("Modelo JSON", "*.json"), ("Modelo Joblib", "*.joblib"), ("Modelo Pickle", "*.pkl"), ("Todos los archivos", "*.*")]
+        filetypes=[("Modelo JSON", "*.json"), ("Modelo Joblib", "*.joblib"), ("Modelo Pickle", "*.pkl"), ("Todos os arquivos", "*.*")]
     )
     if not ruta:
         return
@@ -60,16 +59,16 @@ def cargar_modelo(notebook_visor, frame_pasos_container):
             with open(ruta, "r", encoding="utf-8") as f:
                 info = json.load(f)
         except Exception as e:
-            messagebox.showerror("Error", f"El archivo no es válido o está corrupto:\n{e}")
+            messagebox.showerror("Erro", f"O arquivo non é válido ou está corrupto:\n{e}")
             return
 
         # Validación mínima
-        campos_requeridos = ["descripcion", "entradas", "salida", "formula",
-                             "coeficientes", "intercepto", "metricas"]
+        campos_requeridos = ["descrición", "entradas", "saída", "fórmula",
+                             "coeficientes", "intercepto", "métricas"]
 
         if not all(c in info for c in campos_requeridos):
             messagebox.showerror("Modelo inválido",
-                                 "El archivo no contiene los datos requeridos para un modelo válido.")
+                                 "O arquivo non contén os datos requeridos para un modelo válido.")
             return
     
     elif ruta.endswith('.joblib') or ruta.endswith('.pkl'):
@@ -82,21 +81,21 @@ def cargar_modelo(notebook_visor, frame_pasos_container):
             
             # Validación para formato joblib/pickle
             if not isinstance(info, dict):
-                messagebox.showerror("Modelo inválido", "El archivo no contiene un diccionario válido.")
+                messagebox.showerror("Modelo inválido", "O arquivo non contén un dicionario válido.")
                 return
             
-            campos_requeridos = ["descripcion", "entradas", "salida", "formula",
-                                 "coeficientes", "intercepto", "metricas"]
+            campos_requeridos = ["descrición", "entradas", "saída", "fórmula",
+                                 "coeficientes", "intercepto", "métricas"]
             
             if not all(c in info for c in campos_requeridos):
                 messagebox.showerror("Modelo inválido",
-                                     "El archivo no contiene los datos requeridos para un modelo válido.")
+                                     "O arquivo non contén os datos requeridos para un modelo válido.")
                 return
         except Exception as e:
-            messagebox.showerror("Error", f"Error al cargar el archivo:\n{e}")
+            messagebox.showerror("Erro", f"Produciuse un erro ao cargar o arquivo:\n{e}")
             return
     else:
-        messagebox.showerror("Formato no soportado", "Solo se soportan archivos .json, .joblib y .pkl")
+        messagebox.showerror("Formato non soportado", "Só se soportan arquivos .json, .joblib e .pkl")
         return
 
     # Ocultar flujo inferior
@@ -106,7 +105,7 @@ def cargar_modelo(notebook_visor, frame_pasos_container):
     # Eliminar pestañas que no sean la de datos ni la de modelo (si existen)
     for tab_id in notebook_visor.tabs():
         text = notebook_visor.tab(tab_id, "text")
-        if text not in ("Datos Originales/Procesados", "Modelo"):
+        if text not in ("Datos Orixinais/Procesados", "Modelo"):
             notebook_visor.forget(tab_id)
 
     # Reutilizar pestaña "Modelo" si existe, sino crearla
@@ -136,12 +135,11 @@ def cargar_modelo(notebook_visor, frame_pasos_container):
     ttk.Label(frame, text="Modelo Recuperado", font=("Arial", 14, "bold")).pack(pady=10)
 
     # Descripción
-    ttk.Label(frame, text="Descripción:", font=("Arial", 11, "bold")).pack(anchor="w")
-    ttk.Label(frame, text=info["descripcion"], wraplength=800).pack(anchor="w", pady=(0,10))
-
+    ttk.Label(frame, text="Descrición:", font=("Arial", 11, "bold")).pack(anchor="w")
+    ttk.Label(frame, text=info["descrición"], wraplength=800).pack(anchor="w", pady=(0,10))
     # Fórmula
     ttk.Label(frame, text="Fórmula:", font=("Arial", 11, "bold")).pack(anchor="w")
-    ttk.Label(frame, text=info["formula"], wraplength=800).pack(anchor="w", pady=(0,10))
+    ttk.Label(frame, text=info["fórmula"], wraplength=800).pack(anchor="w", pady=(0,10))
 
     # Coeficientes
     ttk.Label(frame, text="Coeficientes:", font=("Arial", 11, "bold")).pack(anchor="w")
@@ -153,8 +151,8 @@ def cargar_modelo(notebook_visor, frame_pasos_container):
     # Métricas
     ttk.Label(frame, text="Métricas:", font=("Arial", 11, "bold")).pack(anchor="w")
 
-    metricas = info["metricas"]
-    cols = ("Métrica", "Entrenamiento", "Test")
+    metricas = info["métricas"]
+    cols = ("Métrica", "Entrenamento", "Test")
 
     tree_metrics = ttk.Treeview(frame, columns=cols, show="headings", height=2)
     for col in cols:
@@ -169,7 +167,7 @@ def cargar_modelo(notebook_visor, frame_pasos_container):
                                            f"{metricas['ecm_test']:.4f}"))
     tree_metrics.pack(pady=10)
         # === Predicción Interactiva ===
-    ttk.Label(frame, text="Predicción Interactiva", font=("Arial", 12, "bold")).pack(anchor="w", pady=(15,5))
+    ttk.Label(frame, text="Predición Interactiva", font=("Arial", 12, "bold")).pack(anchor="w", pady=(15,5))
 
     frame_pred = ttk.LabelFrame(frame, text="Ingrese valores para predecir", padding=10)
     frame_pred.pack(fill="x", pady=10)
@@ -186,7 +184,7 @@ def cargar_modelo(notebook_visor, frame_pasos_container):
         input_entries[col] = ent
 
     # Campo de resultado
-    ttk.Label(row_frame, text=f"Resultado ({info['salida']}):", font=("Arial",11,"bold")).pack(side="left", padx=(20,5))
+    ttk.Label(row_frame, text=f"Resultado ({info['saída']}):", font=("Arial",11,"bold")).pack(side="left", padx=(20,5))
     lbl_resultado_pred = ttk.Label(row_frame, text="-", font=("Arial",11,"bold"), foreground="green")
     lbl_resultado_pred.pack(side="left")
 
@@ -198,12 +196,12 @@ def cargar_modelo(notebook_visor, frame_pasos_container):
             pred = sum(v * c for v, c in zip(valores, info["coeficientes"])) + info["intercepto"]
             lbl_resultado_pred.config(text=f"{pred:.4f}")
         except ValueError:
-            messagebox.showerror("Error", "Por favor ingrese todos los valores correctamente.")
+            messagebox.showerror("Erro", "Por favor ingrese todos os valores correctamente.")
         except Exception as e:
-            messagebox.showerror("Error", f"Error al predecir: {e}")
+            messagebox.showerror("Erro", f"Erro ao predecir: {e}")
 
-    ttk.Button(frame_pred, text="Calcular Predicción", command=ejecutar_prediccion).pack(pady=5, anchor="w")
+    ttk.Button(frame_pred, text="Calcular Predición", command=ejecutar_prediccion).pack(pady=5, anchor="w")
 
 
     # Confirmación
-    messagebox.showinfo("Modelo cargado", "El modelo fue recuperado exitosamente.")
+    messagebox.showinfo("Modelo cargado", "O modelo foi recuperado exitosamente.")

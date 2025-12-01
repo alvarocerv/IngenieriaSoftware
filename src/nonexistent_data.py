@@ -11,7 +11,7 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
     missing_cols = missing_info[missing_info > 0]
 
     if missing_cols.empty:
-        messagebox.showinfo("Sin datos faltantes", "No se detectaron valores inexistentes en el dataset seleccionado.")
+        messagebox.showinfo("Sen datos faltantes", "Non se detectaron valores inexistentes no dataset seleccionado.")
         # Llama al callback para guardar el DF y dibujar el Paso 3
         on_apply_callback(df)
         return
@@ -23,19 +23,19 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
     tree_frame.pack(fill="x", expand=True, padx=10)
     tree_missing = ttk.Treeview(tree_frame, columns=("columna", "faltantes"), show="headings", height=4)
     tree_missing.heading("columna", text="Columna")
-    tree_missing.heading("faltantes", text="Cantidad Faltante")
+    tree_missing.heading("faltantes", text="Cantidade Faltante")
     for col, val in missing_cols.items():
         tree_missing.insert("", "end", values=(col, val))
     tree_missing.pack(pady=5, fill="x")
 
-    tk.Label(parent_frame, text="Selecciona una opción para manejar los datos:", font=("Arial", 11)).pack(pady=10)
+    tk.Label(parent_frame, text="Selecciona unha opción para manexar os datos:", font=("Arial", 11)).pack(pady=10)
 
     opcion = tk.StringVar(value="media")
     opciones = {
         "Eliminar filas con valores inexistentes": "eliminar",
-        "Rellenar con la media (solo numéricas)": "media",
-        "Rellenar con la mediana (solo numéricas)": "mediana",
-        "Rellenar con un valor constante": "constante"
+        "Encher ca media (só numéricas)": "media",
+        "Encher ca mediana (só numéricas)": "mediana",
+        "Encher cun valor constante": "constante"
     }
 
     for texto, valor in opciones.items():
@@ -56,7 +56,7 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
                 cols_numericas = df_result.select_dtypes(include=np.number).columns
                 df_result[cols_numericas] = df_result[cols_numericas].fillna(df_result[cols_numericas].median())
             elif seleccion == "constante":
-                valor = simpledialog.askstring("Valor constante", "Introduce el valor con el que deseas rellenar:")
+                valor = simpledialog.askstring("Valor constante", "Introduce o valor co que desexas encher:")
                 if valor is None:
                     return
                 df_result.fillna(valor, inplace=True)
@@ -65,7 +65,7 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
             on_apply_callback(df_result)
 
         except Exception as e:
-            messagebox.showerror("Error en preprocesado", f"Ocurrió un problema: {e}")
+            messagebox.showerror("Erro no preprocesado", f"Produciuse un problema: {e}")
 
     # Botón de Aplicar y Finalizar
-    ttk.Button(parent_frame, text="Aplicar y Finalizar", command=aplicar_opcion).pack(pady=15)
+    ttk.Button(parent_frame, text="Aplicar e Finalizar", command=aplicar_opcion).pack(pady=15)

@@ -191,12 +191,12 @@ def iniciar_flujo_paso_1(df):
                     break
             tab_modelo = None
     except Exception as e:
-        print(f"Error al borrar pestaña del modelo: {e}")
+        print(f"Erro ao borrar pestaña do modelo: {e}")
     
     # Reiniciar secciones de pasos 2 y 3 si existían
     try:
         for child in list(frame_pasos_container.winfo_children()):
-            if isinstance(child, ttk.LabelFrame) and child.cget("text") in ("Paso 2: Manejo de Datos Inexistentes", "Paso 3: Separación de Datos"):
+            if isinstance(child, ttk.LabelFrame) and child.cget("text") in ("Paso 2: Manexo de Datos Inexistentes", "Paso 3: Separación de Datos"):
                 child.destroy()
     except Exception:
         pass
@@ -228,14 +228,14 @@ def iniciar_flujo_paso_1(df):
                         break
                 tab_modelo = None
         except Exception as e:
-            print(f"Error al borrar pestaña del modelo: {e}")
+            print(f"Erro ao borrar pestaña do modelo: {e}")
         
         df_seleccionado = df_resultante
         columnas_entrada_seleccionadas = columnas_entrada
         columna_salida_seleccionada = columna_salida
         # Mostrar tabla con columnas coloreadas
         mostrar_tabla(df_original, columnas_entrada, columna_salida)
-        messagebox.showinfo("Paso 1 completado", "Columnas seleccionadas correctamente. Procediendo al siguiente paso.")
+        messagebox.showinfo("Paso 1 completado", "Columnas seleccionadas correctamente. Procedendo ao seguinte paso.")
         iniciar_paso_2(df_seleccionado)
 
     lanzar_selector(df, frame_paso_1, callback, on_selection_change)
@@ -247,11 +247,11 @@ def iniciar_paso_2(df):
     # Reiniciar secciones de pasos 2 y 3 si ya existen
     try:
         for child in list(frame_pasos_container.winfo_children()):
-            if isinstance(child, ttk.LabelFrame) and child.cget("text") in ("Paso 2: Manejo de Datos Inexistentes", "Paso 3: Separación de Datos"):
+            if isinstance(child, ttk.LabelFrame) and child.cget("text") in ("Paso 2: Manexo de Datos Inexistentes", "Paso 3: Separación de Datos"):
                 child.destroy()
     except Exception:
         pass
-    frame_paso_2 = ttk.LabelFrame(frame_pasos_container, text="Paso 2: Manejo de Datos Inexistentes", padding=10)
+    frame_paso_2 = ttk.LabelFrame(frame_pasos_container, text="Paso 2: Manexo de Datos Inexistentes", padding=10)
     frame_paso_2.pack(fill="x", padx=10, pady=10)
     manejo_datos_inexistentes(df, frame_paso_2, iniciar_paso_3)
     frame_pasos_container.update_idletasks()
@@ -281,7 +281,7 @@ def iniciar_paso_4(train_df_local, test_df_local):
     global df_train, df_test
     df_train = train_df_local
     df_test = test_df_local
-    messagebox.showinfo("Paso 3 completado", "Datos separados en entrenamiento y prueba. Procediendo a creación de modelo.")
+    messagebox.showinfo("Paso 3 completado", "Datos separados en entrenamento e proba. Procedendo á creación do modelo.")
 
     # Inicia la animación de progreso
     start_progress()
@@ -291,11 +291,11 @@ def iniciar_paso_4(train_df_local, test_df_local):
         # Reiniciar pestañas: mantener solo la pestaña de datos
         try:
             for i in range(notebook_visor.index("end") - 1, -1, -1):
-                if notebook_visor.tab(i, "text") != "Datos Originales/Procesados":
+                if notebook_visor.tab(i, "text") != "Datos Orixinais/Procesados":
                     notebook_visor.forget(i)
             # Seleccionar pestaña de datos
             for i in range(notebook_visor.index("end")):
-                if notebook_visor.tab(i, "text") == "Datos Originales/Procesados":
+                if notebook_visor.tab(i, "text") == "Datos Orixinais/Procesados":
                     notebook_visor.select(i)
                     break
         except Exception:
@@ -323,7 +323,7 @@ def iniciar_paso_4(train_df_local, test_df_local):
 
 # Ventana principal
 ventana = tk.Tk()
-ventana.title("Visor y Preprocesador de Datos")
+ventana.title("Visor e Preprocesador de Datos")
 ventana.geometry("900x800")
 
 frame_superior = ttk.Frame(ventana)
@@ -336,13 +336,13 @@ etiqueta_ruta = ttk.Label(left_frame, text="Ruta:")
 etiqueta_ruta.pack(side="left", padx=(0,5))
 
 entrada_texto = tk.Entry(left_frame, fg="gray")
-entrada_texto.insert(0, "Seleccione el archivo a cargar")
+entrada_texto.insert(0, "Seleccione o arquivo a cargar")
 entrada_texto.pack(side="left", fill="x", expand=True, padx=5)
 
 right_frame = ttk.Frame(frame_superior)
 right_frame.pack(side="right")
 
-boton_abrir = ttk.Button(right_frame, text="Abrir archivo")
+boton_abrir = ttk.Button(right_frame, text="Abrir arquivo")
 boton_abrir.pack(side="left", padx=5)
 
 boton_cargar_modelo = ttk.Button(right_frame, text="Cargar Modelo")
@@ -359,7 +359,7 @@ notebook_visor = ttk.Notebook(frame_tabla_notebook)
 notebook_visor.pack(fill="both", expand=True)
 
 tab_visor = ttk.Frame(notebook_visor)
-notebook_visor.add(tab_visor, text="Datos Originales/Procesados")
+notebook_visor.add(tab_visor, text="Datos Orixinais/Procesados")
 
 frame_tabla = ttk.Frame(tab_visor)
 # Usamos grid en la pestaña para controlar proporciones.
@@ -374,7 +374,7 @@ def on_tab_change(event):
     tab_id = notebook_visor.select()
     tab_text = notebook_visor.tab(tab_id, "text")
     
-    if tab_text == "Datos Originales/Procesados":
+    if tab_text == "Datos Orixinais/Procesados":
         # Mostrar tabla y pasos
         frame_tabla.grid()
         # Restaurar panel de pasos si estaba oculto
@@ -465,11 +465,11 @@ def _abrir_archivo_reset():
         try:
             # Eliminar todas las pestañas excepto "Datos Originales/Procesados"
             for i in range(notebook_visor.index("end") - 1, -1, -1):
-                if notebook_visor.tab(i, "text") != "Datos Originales/Procesados":
+                if notebook_visor.tab(i, "text") != "Datos Orixinais/Procesados":
                     notebook_visor.forget(i)
             # Seleccionar la pestaña principal
             for i in range(notebook_visor.index("end")):
-                if notebook_visor.tab(i, "text") == "Datos Originales/Procesados":
+                if notebook_visor.tab(i, "text") == "Datos Orixinais/Procesados":
                     notebook_visor.select(i)
                     break
             # Limpiar tabla
@@ -496,15 +496,15 @@ def _cargar_modelo_reset():
         if tabla_canvas:
             tabla_canvas.delete("all")
     except Exception as e:
-        print(f"Error limpiando tabla_canvas: {e}")
+        print(f"Erro limpando tabla_canvas: {e}")
     
     # Limpiar texto de entrada
     try:
         entrada_texto.delete(0, tk.END)
-        entrada_texto.insert(0, "Seleccione el archivo a cargar")
+        entrada_texto.insert(0, "Seleccione o arquivo a cargar")
         entrada_texto.config(fg="gray")
     except Exception as e:
-        print(f"Error limpiando entrada_texto: {e}")
+        print(f"Erro limpando entrada_texto: {e}")
     
     # Limpiar dataframes globales
     df_original = None
@@ -524,7 +524,7 @@ boton_abrir.config(command=_abrir_archivo_reset)
 boton_cargar_modelo.config(command=_cargar_modelo_reset)
 
 # Mensaje de bienvenida al iniciar
-ventana.after(200, lambda: messagebox.showinfo("Visor y preprocesador de datos", 
-    "Bienvenido! Para comenzar, haga clic en 'Abrir archivo' y seleccione un archivo de datos compatible (CSV, Excel, SQLite) o cargue un modelo existente."))
+ventana.after(200, lambda: messagebox.showinfo("Visor e preprocesador de datos", 
+    "Benvido! Para comezar, faga clic en 'Abrir arquivo' e seleccione un arquivo de datos compatible (CSV, Excel, SQLite) ou cargue un modelo existente."))
 
 ventana.mainloop()

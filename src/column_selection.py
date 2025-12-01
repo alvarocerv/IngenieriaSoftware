@@ -22,13 +22,13 @@ def lanzar_selector(df, parent_frame, on_confirm_callback, on_selection_change_c
         salida = salida_var.get()
 
         if not entradas:
-            messagebox.showerror("Error", "Selecciona al menos una columna de entrada.")
+            messagebox.showerror("Erro", "Selecciona polo menos unha columna de entrada.")
             return
         if salida == "":
-            messagebox.showerror("Error", "Selecciona una columna de salida.")
+            messagebox.showerror("Erro", "Selecciona unha columna de saída.")
             return
         if salida in entradas:
-            messagebox.showerror("Error", "La salida no puede ser una entrada.")
+            messagebox.showerror("Erro", "A saída non pode ser unha columna de entrada.")
             return
 
         # Validar que todas las columnas seleccionadas solo contengan valores numéricos o vacíos
@@ -47,10 +47,10 @@ def lanzar_selector(df, parent_frame, on_confirm_callback, on_selection_change_c
                 columnas_no_numericas.append(col)
         
         if columnas_no_numericas:
-            mensaje_error = "Las siguientes columnas contienen valores no numéricos:\n\n"
+            mensaje_error = "As seguintes columnas conteñen valores non numéricos:\n\n"
             mensaje_error += "\n".join(f"• {col}" for col in columnas_no_numericas)
-            mensaje_error += "\n\nPor favor, selecciona solo columnas con valores numéricos o vacíos."
-            messagebox.showerror("Error de validación", mensaje_error)
+            mensaje_error += "\n\nPor favor, selecciona só columnas con valores numéricos ou baleiros."
+            messagebox.showerror("Erro de validación", mensaje_error)
             return
 
         df_sel = df[entradas + [salida]].copy()
@@ -62,7 +62,7 @@ def lanzar_selector(df, parent_frame, on_confirm_callback, on_selection_change_c
     contenedor.pack(fill="both", expand=True, padx=10, pady=10)
 
     frame_inputs = ttk.LabelFrame(contenedor, text="Columnas de entrada", padding=8)
-    frame_outputs = ttk.LabelFrame(contenedor, text="Columna de salida", padding=8)
+    frame_outputs = ttk.LabelFrame(contenedor, text="Columna de saída", padding=8)
 
     frame_inputs.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
     frame_outputs.grid(row=0, column=1, sticky="nsew")
@@ -115,7 +115,7 @@ def lanzar_selector(df, parent_frame, on_confirm_callback, on_selection_change_c
             frame_inputs.rowconfigure(i, weight=1)
 
         # Label
-        ttk.Label(frame_outputs, text="Selecciona la columna de salida:").pack(anchor="w", pady=(0,5))
+        ttk.Label(frame_outputs, text="Selecciona a columna de saída:").pack(anchor="w", pady=(0,5))
 
         # Combobox con todas las columnas
         combo_salida = ttk.Combobox(
@@ -142,5 +142,5 @@ def lanzar_selector(df, parent_frame, on_confirm_callback, on_selection_change_c
     frame_outputs.bind("<Configure>", lambda e: distribuir_checkboxes())
 
     # Botón confirmar
-    ttk.Button(parent_frame, text="Confirmar y continuar", command=confirmar_seleccion)\
+    ttk.Button(parent_frame, text="Confirmar e continuar", command=confirmar_seleccion)\
         .pack(pady=15)

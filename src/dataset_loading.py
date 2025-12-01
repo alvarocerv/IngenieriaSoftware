@@ -17,35 +17,35 @@ def cargar_dataset(file_path):
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             tables = cursor.fetchall()
             if not tables:
-                raise ValueError("No se encontraron tablas en la base de datos SQLite.")
+                raise ValueError("Non se atoparon tablas na base de datos SQLite.")
             table_name = tables[0][0]
             df = pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
             conn.close()
         else:
-            raise ValueError("Formato de archivo no válido.")
+            raise ValueError("Formato de arquivo non válido.")
         return df
 
     except FileNotFoundError:
-        messagebox.showerror("Error", "Archivo no encontrado.")
+        messagebox.showerror("Erro", "Arquivo non atopado.")
     except pd.errors.EmptyDataError:
-        messagebox.showerror("Error", "El archivo está vacío.")
+        messagebox.showerror("Erro", "O arquivo está baleiro.")
     except sqlite3.OperationalError:
-        messagebox.showerror("Error", "No se pudo leer la base de datos SQLite.")
+        messagebox.showerror("Erro", "Non se puido ler a base de datos SQLite.")
     except ValueError as e:
-        messagebox.showerror("Error", str(e))
+        messagebox.showerror("Erro", str(e))
     except Exception as e:
-        messagebox.showerror("Error inesperado", f"Ocurrió un problema:\n{e}")
+        messagebox.showerror("Erro inesperado", f"Ocurriu un problema:\n{e}")
     return None
 
 
 def abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, iniciar_flujo_paso_1, ventana, set_dataframes, reset_callback=None):
     """Abre un cuadro de diálogo para seleccionar un archivo de datos, lo carga y actualiza la interfaz"""
     ruta = filedialog.askopenfilename(
-        title="Seleccionar archivo de datos", 
-        filetypes=[("Archivos soportados", "*.csv *.xls *.xlsx *.sqlite *.db"), ("Todos los archivos", "*.*")]
+        title="Seleccionar arquivo de datos", 
+        filetypes=[("Arquivos soportados", "*.csv *.xls *.xlsx *.sqlite *.db"), ("Todos os arquivos", "*.*")]
     )
     if not ruta:
-        messagebox.showinfo("Carga cancelada", "La carga de archivo fue cancelada.")
+        messagebox.showinfo("Carga cancelada", "A carga do arquivo foi cancelada.")
         return
     
     # Ejecutar reset solo después de confirmar que hay archivo seleccionado
@@ -70,10 +70,10 @@ def abrir_archivo(entrada_texto, start_progress, stop_progress, mostrar_tabla, i
                 # Actualizar las variables globales en interface.py
                 set_dataframes(df_original, df_original_sin_filtrar)
                 mostrar_tabla(df_original)
-                messagebox.showinfo("Datos cargados", "Archivo cargado exitosamente. Iniciando flujo de preprocesamiento.")
+                messagebox.showinfo("Datos cargados", "Arquivo cargado exitosamente. Iniciando fluxo de preprocesamento.")
                 iniciar_flujo_paso_1(df_original)
             else:
-                messagebox.showerror("Error en carga", "No se pudo cargar el archivo.")
+                messagebox.showerror("Erro na carga", "Non se puido cargar o arquivo.")
         ventana.after(0, fin)
     
     threading.Thread(target=hilo_carga, daemon=True).start()
