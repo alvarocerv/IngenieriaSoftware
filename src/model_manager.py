@@ -168,6 +168,42 @@ def cargar_modelo(notebook_visor, frame_pasos_container):
                                            f"{metricas['ecm_train']:.4f}",
                                            f"{metricas['ecm_test']:.4f}"))
     tree_metrics.pack(pady=10)
+        # === Predicción Interactiva ===
+    ttk.Label(frame, text="Predicción Interactiva", font=("Arial", 12, "bold")).pack(anchor="w", pady=(15,5))
+
+    frame_pred = ttk.LabelFrame(frame, text="Ingrese valores para predecir", padding=10)
+    frame_pred.pack(fill="x", pady=10)
+
+    input_entries = {}
+    row_frame = ttk.Frame(frame_pred)
+    row_frame.pack(fill="x", pady=5)
+
+    # Generar entradas dinámicamente según variables del modelo
+    for col in info["entradas"]:
+        ttk.Label(row_frame, text=f"{col}:", width=12, anchor="w").pack(side="left", padx=(0,2))
+        ent = ttk.Entry(row_frame, width=8)
+        ent.pack(side="left", padx=(0,10))
+        input_entries[col] = ent
+
+    # Campo de resultado
+    ttk.Label(row_frame, text=f"Resultado ({info['salida']}):", font=("Arial",11,"bold")).pack(side="left", padx=(20,5))
+    lbl_resultado_pred = ttk.Label(row_frame, text="-", font=("Arial",11,"bold"), foreground="green")
+    lbl_resultado_pred.pack(side="left")
+
+    def ejecutar_prediccion():
+        """Ejecuta la predicción usando el modelo cargado"""
+        try:
+            # Convertir coeficientes y entradas a valores numéricos
+            valores = [float(input_entries[col].get()) for col in info["entradas"]]
+            pred = sum(v * c for v, c in zip(valores, info["coeficientes"])) + info["intercepto"]
+            lbl_resultado_pred.config(text=f"{pred:.4f}")
+        except ValueError:
+            messagebox.showerror("Error", "Por favor ingrese todos los valores correctamente.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al predecir: {e}")
+
+    ttk.Button(frame_pred, text="Calcular Predicción", command=ejecutar_prediccion).pack(pady=5, anchor="w")
+
 
     # Confirmación
     messagebox.showinfo("Modelo cargado", "El modelo fue recuperado exitosamente.")
