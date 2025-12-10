@@ -500,7 +500,6 @@ tabla_canvas.bind("<Shift-MouseWheel>", _on_canvas_shift_mousewheel)
 # Redibujar tabla cuando cambie el tamaño del canvas
 def _on_canvas_resize(event):
     """Redibuja la tabla cuando cambia el tamaño de la ventana"""
-    global df_original
     if df_original is not None:
         # Esperar un poco para evitar múltiples llamadas durante el resize
         tabla_canvas.after(100, lambda: mostrar_tabla(df_original))
