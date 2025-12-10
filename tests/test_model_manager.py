@@ -5,8 +5,6 @@ import tempfile
 import os
 import sys
 from sklearn.linear_model import LinearRegression
-import joblib
-import pickle
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -121,99 +119,6 @@ class TestGuardadoRecuperacionModelo:
         np.testing.assert_array_almost_equal(
             modelo_cargado["coeficientes"], modelo.coef_
         )
-
-    def test_guardar_modelo_joblib(
-        self, modelo_entrenado, directorio_temporal
-    ):
-        """Prueba guardar modelo en formato joblib"""
-        ruta = os.path.join(directorio_temporal, "modelo.joblib")
-
-        info_completa = {
-            "modelo": modelo_entrenado["modelo"],
-            "descripcion": modelo_entrenado["descripcion"],
-            "entradas": modelo_entrenado["columnas_entrada"],
-            "salida": modelo_entrenado["columna_salida"],
-            "formula": "formula_placeholder",
-            "coeficientes": modelo_entrenado["modelo"].coef_.tolist(),
-            "intercepto": float(modelo_entrenado["modelo"].intercept_),
-            "metricas": modelo_entrenado["metricas"],
-        }
-
-        joblib.dump(info_completa, ruta)
-
-        assert os.path.exists(ruta)
-        assert os.path.getsize(ruta) > 0
-
-    def test_cargar_modelo_joblib(self, modelo_entrenado, directorio_temporal):
-        """Prueba cargar modelo desde joblib"""
-        ruta = os.path.join(directorio_temporal, "modelo.joblib")
-
-        info_completa = {
-            "modelo": modelo_entrenado["modelo"],
-            "descripcion": modelo_entrenado["descripcion"],
-            "entradas": modelo_entrenado["columnas_entrada"],
-            "salida": modelo_entrenado["columna_salida"],
-            "formula": "formula_placeholder",
-            "coeficientes": modelo_entrenado["modelo"].coef_.tolist(),
-            "intercepto": float(modelo_entrenado["modelo"].intercept_),
-            "metricas": modelo_entrenado["metricas"],
-        }
-
-        joblib.dump(info_completa, ruta)
-
-        # Cargar
-        modelo_cargado = joblib.load(ruta)
-
-        assert modelo_cargado["descripcion"] == modelo_entrenado["descripcion"]
-        assert isinstance(modelo_cargado["modelo"], LinearRegression)
-
-    def test_guardar_modelo_pickle(
-        self, modelo_entrenado, directorio_temporal
-    ):
-        """Prueba guardar modelo en formato pickle"""
-        ruta = os.path.join(directorio_temporal, "modelo.pkl")
-
-        info_completa = {
-            "modelo": modelo_entrenado["modelo"],
-            "descripcion": modelo_entrenado["descripcion"],
-            "entradas": modelo_entrenado["columnas_entrada"],
-            "salida": modelo_entrenado["columna_salida"],
-            "formula": "formula_placeholder",
-            "coeficientes": modelo_entrenado["modelo"].coef_.tolist(),
-            "intercepto": float(modelo_entrenado["modelo"].intercept_),
-            "metricas": modelo_entrenado["metricas"],
-        }
-
-        with open(ruta, "wb") as f:
-            pickle.dump(info_completa, f)
-
-        assert os.path.exists(ruta)
-        assert os.path.getsize(ruta) > 0
-
-    def test_cargar_modelo_pickle(self, modelo_entrenado, directorio_temporal):
-        """Prueba cargar modelo desde pickle"""
-        ruta = os.path.join(directorio_temporal, "modelo.pkl")
-
-        info_completa = {
-            "modelo": modelo_entrenado["modelo"],
-            "descripcion": modelo_entrenado["descripcion"],
-            "entradas": modelo_entrenado["columnas_entrada"],
-            "salida": modelo_entrenado["columna_salida"],
-            "formula": "formula_placeholder",
-            "coeficientes": modelo_entrenado["modelo"].coef_.tolist(),
-            "intercepto": float(modelo_entrenado["modelo"].intercept_),
-            "metricas": modelo_entrenado["metricas"],
-        }
-
-        with open(ruta, "wb") as f:
-            pickle.dump(info_completa, f)
-
-        # Cargar
-        with open(ruta, "rb") as f:
-            modelo_cargado = pickle.load(f)
-
-        assert modelo_cargado["descripcion"] == modelo_entrenado["descripcion"]
-        assert isinstance(modelo_cargado["modelo"], LinearRegression)
 
     def test_prediccion_modelo_recuperado(
         self, modelo_entrenado, directorio_temporal

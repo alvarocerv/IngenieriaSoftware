@@ -7,7 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import threading
 import time
 import pandas as pd
-from graphic_interface_predictions import dibujar_grafico_predicciones
+import numpy as np
 
 _mousebind_installed = (
     False  # ya no se usará para binding global, mantenido por compatibilidad
@@ -190,8 +190,9 @@ def mostrar_resultados(
     )
     tree_metrics.pack(pady=5, padx=10, fill="x")
 
-    # Gráfico si solo 1 variable
-    if len(input_cols) == 1:
+    # Gráfico si solo 1 variable: test vs predicción
+    # Se dibuja siempre
+    def _crear_fig_modelo():
         fig = plt.Figure(figsize=(6, 4), dpi=100)
         ax = fig.add_subplot(111)
         ax.scatter(
@@ -216,15 +217,94 @@ def mostrar_resultados(
         ax.set_ylabel(output_col)
         ax.legend()
         fig.tight_layout()
-        canvas_fig = FigureCanvasTkAgg(fig, master=frame_content)
-        canvas_fig.draw()
-        canvas_fig.get_tk_widget().pack(
-            side="top", fill="both", expand=True, padx=10, pady=5
-        )
+        return fig
+
+    def _crear_fig_predicciones(x_vals, y_preds, x_label, y_label):
+        fig = plt.Figure(figsize=(6,4), dpi=100)
+        ax = fig.add_subplot(111)
+        # x = valor real de la columna de salida (test), y = predicción según la fórmula
+        ax.scatter(x_vals, y_preds, color='red', label='Predicción (test)', alpha=0.8)
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+ 
+        # Límites combinados para dibujar líneas de referencia correctamente
+        try:
+            xmin = float(np.nanmin(x_vals))
+            xmax = float(np.nanmax(x_vals))
+            ymin = float(np.nanmin(y_preds))
+            ymax = float(np.nanmax(y_preds))
+            low = min(xmin, ymin)
+            high = max(xmax, ymax)
+        except Exception:
+            low, high = 0.0, 1.0
+ 
+        # Línea y = x (45°): referencia de predicción perfecta
+        x_line = np.linspace(low, high, 100)
+        ax.plot(x_line, x_line, color='black', linestyle='--', label='Referencia (y = x)')
+ 
+        # Recta de ajuste (mejor ajuste lineal predicted vs real)
+        try:
+            slope, intercept = np.polyfit(x_vals, y_preds, 1)
+            y_line = slope * x_line + intercept
+            ax.plot(x_line, y_line, color='green', linewidth=2, label=f'Ajuste')
+        except Exception:
+            slope, intercept = None, None
+ 
+        ax.set_title('Valores Reales Test (X) vs Predicción (Y)')
+        ax.set_xlim(low, high)
+        ax.set_ylim(low, high)
+        ax.grid(True)
+        ax.legend()
+        fig.tight_layout()
+        return fig
+ 
+    # Frame contenedor para los gráficos
+    charts_frame = ttk.Frame(frame_content)
+    charts_frame.pack(fill='both', expand=True, padx=10, pady=5)
+ 
+    if len(input_cols) == 1:
+        # Dos columnas con mismo peso
+        left_frame = ttk.Frame(charts_frame)
+        right_frame = ttk.Frame(charts_frame)
+        left_frame.grid(row=0, column=0, sticky='nsew')
+        right_frame.grid(row=0, column=1, sticky='nsew')
+        charts_frame.grid_columnconfigure(0, weight=1)
+        charts_frame.grid_columnconfigure(1, weight=1)
+ 
+        # Figura del modelo (izquierda)
+        fig_model = _crear_fig_modelo()
+        canvas_model = FigureCanvasTkAgg(fig_model, master=left_frame)
+        canvas_model.draw()
+        canvas_model.get_tk_widget().pack(fill='both', expand=True)
+        plt.close(fig_model)
+ 
+        # Figura predicciones (derecha): x = valor real de la columna de salida, y = predicción según la fórmula
+        x_real_vals = test_df[output_col].values
+        # Obtener predicciones usando todas las columnas de entrada
+        X_test_full = test_df[input_cols]
+        y_pred_vals = model.predict(X_test_full)
+        fig_pred = _crear_fig_predicciones(x_real_vals, y_pred_vals, output_col, 'predicción ' + output_col)
+        canvas_pred = FigureCanvasTkAgg(fig_pred, master=right_frame)
+        canvas_pred.draw()
+        canvas_pred.get_tk_widget().pack(fill='both', expand=True)
+        plt.close(fig_pred)
     else:
-        ttk.Label(
-            frame_content, text="No se puede graficar múltiples variables."
-        ).pack(pady=10)
+        # Solo mostramos el nuevo gráfico. Como no hay una única variable de entrada,
+        # como x usaremos el índice de las muestras.
+        single_frame = ttk.Frame(charts_frame)
+        single_frame.pack(fill='both', expand=True)
+ 
+        # Usar como eje X los valores reales de la columna de salida
+        x_real_vals = test_df[output_col].values
+        # Obtener predicciones usando todas las columnas de entrada
+        X_test_full = test_df[input_cols]
+        y_pred_vals = model.predict(X_test_full)
+        fig_pred = _crear_fig_predicciones(x_real_vals, y_pred_vals, output_col, 'predicción ' + output_col)
+        canvas_pred = FigureCanvasTkAgg(fig_pred, master=single_frame)
+        canvas_pred.draw()
+        canvas_pred.get_tk_widget().pack(fill='both', expand=True)
+        plt.close(fig_pred)
+ 
 
     # Descripción debajo de métricas y gráfico
     ttk.Label(
@@ -258,51 +338,6 @@ def mostrar_resultados(
         ).pack(side="left", padx=5)
     # Botón para mostrar predicciones
     pred_tab_ref = [tab_predicciones]
-
-    def _mostrar_predicciones():
-        """Crear la pestaña de predicciones solo al hacer clic, si no existe"""
-        if pred_tab_ref[0] is None:
-            if notebook_visor is None:
-                messagebox.showerror(
-                    "Predicciones",
-                    "No se puede crear la pestaña de predicciones (notebook no disponible).",
-                )
-                return
-            pred_tab_ref[0] = ttk.Frame(notebook_visor)
-            notebook_visor.add(pred_tab_ref[0], text="Predicciones")
-        tab_pred = pred_tab_ref[0]
-        if len(input_cols) != 1:
-            messagebox.showinfo(
-                "Predicciones",
-                "El gráfico solo se muestra para una única columna de entrada.",
-            )
-            return
-        # Limpiar contenido previo
-        for w in tab_pred.winfo_children():
-            w.destroy()
-        dibujar_grafico_predicciones(
-            tab_pred, model, test_df, input_cols[0], output_col
-        )
-        # Seleccionar la pestaña de predicciones inmediatamente
-        try:
-            notebook_visor.select(tab_pred)
-        except Exception:
-            pass
-
-    # Botón Mostrar Predicciones (se deshabilita tras primer uso)
-    btn_predicciones = ttk.Button(
-        botones_frame,
-        text="Mostrar Predicciones",
-        command=_mostrar_predicciones,
-    )
-    btn_predicciones.pack(side="left", padx=5)
-
-    # Reemplazar la función para que pueda deshabilitar el botón tras ejecución
-    def _wrap_mostrar():
-        _mostrar_predicciones()
-        btn_predicciones.config(state="disabled")
-
-    btn_predicciones.configure(command=_wrap_mostrar)
 
     # Predicción interactiva
     if prediction_frame_ref[0] is not None:

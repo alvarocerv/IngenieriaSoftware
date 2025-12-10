@@ -136,11 +136,13 @@ def iniciar_separacion(
                 f"Conjunto de Test: {len(test_df)} filas",
             )
 
-            # Ocultar widgets de input
-            frame_inputs.pack_forget()
-            btn_separar.pack_forget()
+            # Mantener el botón de separar para recalcular
+            try:
+                btn_separar.config("Recalcular")
+            except Exception:
+                pass
 
-            # Crear y mostrar botones de visualización
+            # Crear o actualizar botones de visualización de conjuntos
             for widget in frame_vista.winfo_children():
                 widget.destroy()
 
@@ -157,7 +159,10 @@ def iniciar_separacion(
             btn_todos.pack(side=tk.LEFT, padx=5)
             btn_train.pack(side=tk.LEFT, padx=5)
             btn_test.pack(side=tk.LEFT, padx=5)
-            frame_vista.pack(pady=10)
+            
+            # Empaquetar el frame de vista si no está visible
+            if not frame_vista.winfo_ismapped():
+                frame_vista.pack(pady=10)
 
             # Callback al siguiente paso (Creación del modelo)
             if callback:
