@@ -7,8 +7,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import threading
 import time
 
-_mousebind_installed = False
-
 
 def dibujar_ui_model_creation(
     notebook_visor,
@@ -19,7 +17,6 @@ def dibujar_ui_model_creation(
     stop_progress=None,
 ):
     """Crea la interfaz de creación de modelo en un hilo separado"""
-    global _mousebind_installed
 
     # Eliminar pestaña anterior si existe
     for i in range(notebook_visor.index("end")):
@@ -60,9 +57,7 @@ def dibujar_ui_model_creation(
         if hasattr(event, "delta"):
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
-    if not _mousebind_installed:
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
-        _mousebind_installed = True
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
     # Preparar referencia para descripción (se ubicará después de métricas y gráfico)
     txt_descripcion = None

@@ -9,10 +9,6 @@ import time
 import pandas as pd
 from graphic_interface_predictions import dibujar_grafico_predicciones
 
-_mousebind_installed = (
-    False  # ya no se usará para binding global, mantenido por compatibilidad
-)
-
 
 def dibujar_ui_model_creation(
     tab_modelo,
@@ -25,7 +21,6 @@ def dibujar_ui_model_creation(
     tab_predicciones=None,
 ):
     """Crea la interfaz de creación de modelo dentro del Frame de la pestaña provisto"""
-    global _mousebind_installed
 
     # Scrollable frame dentro de la pestaña recibida
     canvas = tk.Canvas(tab_modelo)
