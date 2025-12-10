@@ -85,7 +85,6 @@ def enable_global_scroll(canvas):
 
 def mostrar_tabla(df, columnas_entrada=None, columna_salida=None):
     """Muestra el DataFrame en la tabla con columnas coloreadas individualmente"""
-    global columnas_entrada_seleccionadas, columna_salida_seleccionada, tabla_canvas
     if df is None:
         return
 
@@ -205,7 +204,7 @@ def mostrar_tabla(df, columnas_entrada=None, columna_salida=None):
 # Flujo de pasos
 def iniciar_flujo_paso_1(df):
     """Inicia el flujo de preprocesamiento desde el paso 1: selección de columnas"""
-    global df_seleccionado, columnas_entrada_seleccionadas, columna_salida_seleccionada, tab_modelo
+    global tab_modelo
 
     # Borrar la pestaña del modelo si existe
     try:
@@ -247,7 +246,7 @@ def iniciar_flujo_paso_1(df):
 
     def callback(df_resultante, columnas_entrada, columna_salida):
         """Callback para manejar el resultado de la selección de columnas"""
-        global df_seleccionado, columnas_entrada_seleccionadas, columna_salida_seleccionada, tab_modelo
+        global tab_modelo, df_seleccionado, columnas_entrada_seleccionadas, columna_salida_seleccionada
 
         # Borrar la pestaña del modelo si existe (ya que se van a seleccionar nuevas columnas)
         try:
@@ -302,7 +301,7 @@ def iniciar_paso_2(df):
 
 def iniciar_paso_3(df_procesado_local):
     """Inicia el paso 3: separación de datos"""
-    global df_procesado, df_original_sin_filtrar
+    global df_procesado
     df_procesado = df_procesado_local
     mostrar_tabla(df_original)
     messagebox.showinfo(
@@ -637,7 +636,9 @@ ventana.after(
     200,
     lambda: messagebox.showinfo(
         "Visor y preprocesador de datos",
-        "Bienvenido! Para comenzar, haga clic en 'Abrir archivo' y seleccione un archivo de datos compatible (CSV, Excel, SQLite) o cargue un modelo existente.",
+        "Bienvenido! Para comenzar, haga clic en 'Abrir archivo' y "
+        "seleccione un archivo de datos compatible (CSV, Excel, SQLite) "
+        "o cargue un modelo existente.",
     ),
 )
 
