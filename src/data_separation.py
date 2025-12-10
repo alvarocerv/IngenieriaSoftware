@@ -3,14 +3,10 @@ from tkinter import ttk, messagebox
 from sklearn.model_selection import train_test_split
 import random
 
-# Variables globales
-train_df = None
-test_df = None
-
-
 def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, callback=None, df_original=None):
     """Separa los datos en conjuntos de entrenamiento y prueba según el porcentaje y semilla proporcionados"""
-    global train_df, test_df
+    train_df_local = None
+    test_df_local = None
     
     frame_inputs = ttk.Frame(frame_pasos_container)
     frame_inputs.pack(pady=5, padx=10)
@@ -72,7 +68,7 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
 
     def separar_datos():
         """Separa los datos según el porcentaje y semilla proporcionados."""
-        global train_df, test_df
+        nonlocal train_df_local, test_df_local
         try:
             train_pct_str = entry_train_pct.get()
             seed_str = entry_seed.get()
@@ -101,12 +97,12 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
                 messagebox.showerror("Error", "No hay suficientes datos para realizar la separación (mínimo 5 filas).")
                 return
 
-            train_df, test_df = train_test_split(df_procesado, test_size=test_pct / 100, random_state=seed)
+            train_df_local, test_df_local = train_test_split(df_procesado, test_size=test_pct / 100, random_state=seed)
 
             messagebox.showinfo("Separación Completada",
                                 f"{msg_info}\n\n"
-                                f"Conjunto de Entrenamiento: {len(train_df)} filas\n"
-                                f"Conjunto de Test: {len(test_df)} filas")
+                                f"Conjunto de Entrenamiento: {len(train_df_local)} filas\n"
+                                f"Conjunto de Test: {len(test_df_local)} filas")
 
             # Ocultar widgets de input
             frame_inputs.pack_forget()
@@ -120,8 +116,8 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
             btn_test = ttk.Button(frame_vista, text="Ver Conjunto de Test")
             btn_todos = ttk.Button(frame_vista, text="Ver Todos los Datos")
 
-            btn_train.config(command=lambda: ver_conjunto(train_df))
-            btn_test.config(command=lambda: ver_conjunto(test_df))
+            btn_train.config(command=lambda: ver_conjunto(train_df_local))
+            btn_test.config(command=lambda: ver_conjunto(test_df_local))
             btn_todos.config(command=ver_todos_datos)
 
             btn_todos.pack(side=tk.LEFT, padx=5)
@@ -131,7 +127,7 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
 
             # Callback al siguiente paso (Creación del modelo)
             if callback:
-                callback(train_df, test_df)
+                callback(train_df_local, test_df_local)
 
         except ValueError as e:
             messagebox.showerror("Error", f"Entrada inválida: {e}")

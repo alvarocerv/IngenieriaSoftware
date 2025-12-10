@@ -12,6 +12,7 @@ _mousebind_installed = False
 def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callback=None,
                               start_progress=None, stop_progress=None):
     """Crea la interfaz de creación de modelo en un hilo separado"""
+    global _mousebind_installed
 
     # Eliminar pestaña anterior si existe
     for i in range(notebook_visor.index("end")):
