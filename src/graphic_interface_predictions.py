@@ -39,11 +39,6 @@ def dibujar_grafico_predicciones(
         x_line, y_line, color="green", label="Línea de ajuste", linewidth=2
     )
 
-    # (Opcional) Mostrar fórmula en el título extendido
-    ax.set_title(
-        f"Predicciones vs Test\nAjuste: y = {slope:.4f}x + {intercept:.4f}"
-    )
-
     ax.set_xlabel(nombre_col_entrada)
     ax.set_ylabel(nombre_col_salida)
     ax.set_title("Predicciones vs Test")

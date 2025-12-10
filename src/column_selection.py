@@ -88,7 +88,6 @@ def lanzar_selector(
     contenedor.columnconfigure(1, weight=1)
 
     check_vars_inputs = {}
-    check_vars_output = {}
 
     def distribuir_checkboxes():
         # Limpiar frames
@@ -148,7 +147,6 @@ def lanzar_selector(
         check_vars_inputs[cname] = tk.BooleanVar()
         # Agregar trace para detectar cambios
         check_vars_inputs[cname].trace_add("write", actualizar_seleccion)
-        check_vars_output[cname] = tk.BooleanVar()
 
     # Agregar trace a la variable de salida
     salida_var.trace_add("write", actualizar_seleccion)
