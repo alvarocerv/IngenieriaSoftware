@@ -16,7 +16,6 @@ def iniciar_separacion(
     df_original=None,
 ):
     """Separa los datos en conjuntos de entrenamiento y prueba según el porcentaje y semilla proporcionados"""
-    global train_df, test_df
 
     frame_inputs = ttk.Frame(frame_pasos_container)
     frame_inputs.pack(pady=5, padx=10)
