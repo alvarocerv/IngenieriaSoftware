@@ -18,7 +18,6 @@ df_seleccionado = None
 df_procesado = None
 df_train = None
 df_test = None
-tree = None
 tabla_canvas = None
 canvas_pasos = None
 frame_pasos_container = None
@@ -481,9 +480,6 @@ scroll_x.grid(row=1, column=0, sticky="ew")
 frame_tabla.rowconfigure(0, weight=1)
 frame_tabla.columnconfigure(0, weight=1)
 
-# Mantener tree como None para compatibilidad pero no lo usamos
-tree = None
-
 
 # Soporte para scroll con rueda del ratón
 def _on_canvas_mousewheel(event):
@@ -578,11 +574,7 @@ def _abrir_archivo_reset():
                 ):
                     notebook_visor.select(i)
                     break
-            # Limpiar tabla
-            try:
-                tree.delete(*tree.get_children())
-            except Exception:
-                pass
+            # Limpiar tabla (ya se limpia en mostrar_tabla)
             # Limpiar panel de pasos
             for w in frame_pasos_container.winfo_children():
                 w.destroy()
