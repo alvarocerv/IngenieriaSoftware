@@ -12,7 +12,6 @@ _mousebind_installed = False
 def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callback=None,
                               start_progress=None, stop_progress=None):
     """Crea la interfaz de creación de modelo en un hilo separado"""
-    global _mousebind_installed
 
     # Eliminar pestaña anterior si existe
     for i in range(notebook_visor.index("end")):
@@ -84,7 +83,7 @@ def dibujar_ui_model_creation(notebook_visor, train_df, test_df, guardar_callbac
                                                               prediction_frame_ref, train_df, test_df,
                                                               txt_descripcion, guardar_callback))
         except Exception as e:
-            frame_content.after(0, lambda: messagebox.showerror("Error en Modelo", f"Ocurrió un error:\n{e}"))
+            frame_content.after(0, lambda e=e: messagebox.showerror("Error en Modelo", f"Ocurrió un error:\n{e}"))
         finally:
             if stop_progress: stop_progress()
     threading.Thread(target=crear_modelo_thread, daemon=True).start()

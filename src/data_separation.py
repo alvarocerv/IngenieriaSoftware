@@ -72,7 +72,7 @@ def iniciar_separacion(df_procesado, frame_pasos_container, func_mostrar_tabla, 
 
     def separar_datos():
         """Separa los datos según el porcentaje y semilla proporcionados."""
-        global train_df, test_df, btn_train, btn_test
+        global train_df, test_df
         try:
             train_pct_str = entry_train_pct.get()
             seed_str = entry_seed.get()

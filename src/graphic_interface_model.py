@@ -15,7 +15,6 @@ def dibujar_ui_model_creation(tab_modelo, notebook_visor, train_df, test_df, gua
                               start_progress=None, stop_progress=None,
                               tab_predicciones=None):
     """Crea la interfaz de creación de modelo dentro del Frame de la pestaña provisto"""
-    global _mousebind_installed
 
     # Scrollable frame dentro de la pestaña recibida
     canvas = tk.Canvas(tab_modelo)
@@ -81,7 +80,7 @@ def dibujar_ui_model_creation(tab_modelo, notebook_visor, train_df, test_df, gua
                                    notebook_visor=notebook_visor)
             frame_content.after(0, _render)
         except Exception as e:
-            frame_content.after(0, lambda: messagebox.showerror("Error en Modelo", f"Ocurrió un error:\n{e}"))
+            frame_content.after(0, lambda e=e: messagebox.showerror("Error en Modelo", f"Ocurrió un error:\n{e}"))
         finally:
             if stop_progress: stop_progress()
         
