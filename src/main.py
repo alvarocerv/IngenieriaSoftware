@@ -178,7 +178,7 @@ def mostrar_tabla(df, columnas_entrada=None, columna_salida=None):
 # Flujo de pasos
 def iniciar_flujo_paso_1(df):
     """Inicia el flujo de preprocesamiento desde el paso 1: selección de columnas"""
-    global df_seleccionado, columnas_entrada_seleccionadas, columna_salida_seleccionada, tab_modelo
+    global columnas_entrada_seleccionadas, columna_salida_seleccionada, tab_modelo
     
     # Borrar la pestaña del modelo si existe
     try:
