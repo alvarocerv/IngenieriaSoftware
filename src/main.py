@@ -86,7 +86,7 @@ def enable_global_scroll(canvas):
 
 def mostrar_tabla(df, columnas_entrada=None, columna_salida=None):
     """Muestra el DataFrame en la tabla con columnas coloreadas individualmente"""
-    global tree, columnas_entrada_seleccionadas, columna_salida_seleccionada, tabla_canvas
+    global columnas_entrada_seleccionadas, columna_salida_seleccionada, tabla_canvas
     if df is None:
         return
 
