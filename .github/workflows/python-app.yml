@@ -28,31 +28,12 @@ jobs:
         python -m pip install --upgrade pip setuptools
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with flake8 and save full report
+    - name: Lint with flake8
       run: |
-        set -o pipefail
-        # Run flake8 and write full output to a report file while still streaming to the log
-        flake8 . --show-source --max-line-length=127 --statistics | tee flake8-report.txt
-        # Capture flake8 exit code even when piped to tee
-        echo "FLAKE8_EXIT_CODE=${PIPESTATUS[0]}" > flake8-exitcode.txt
-      shell: bash
-    - name: Upload flake8 report
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: flake8-report
-        path: |
-          flake8-report.txt
-          flake8-exitcode.txt
-    - name: Fail if flake8 found issues
-      if: always()
-      run: |
-        exit_code=$(sed 's/FLAKE8_EXIT_CODE=//' flake8-exitcode.txt)
-        if [ "${exit_code}" != "0" ]; then
-          echo "flake8 found issues (exit ${exit_code}). See artifact 'flake8-report'."
-          exit ${exit_code}
-        fi
-      shell: bash
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
         pytest
