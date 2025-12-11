@@ -125,11 +125,11 @@ def dibujar_ui_model_creation(
                 )
 
             frame_content.after(0, _render)
-        except Exception as e:
+        except Exception :
             frame_content.after(
                 0,
                 lambda: messagebox.showerror(
-                    "Error en Modelo", f"Ocurrió un error: {str(e)}"
+                    "Error en Modelo", "Ocurrió un error."
                 ),
             )
         finally:
