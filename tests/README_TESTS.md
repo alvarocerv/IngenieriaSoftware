@@ -4,7 +4,7 @@ Este directorio contiene las pruebas unitarias automáticas para todas las funci
 
 ## Resumen
 
-- **Total de tests**: 46 tests
+- **Total de tests**: 44 tests
 - **Estado**: Todos los tests pasan sin warnings
 - **Framework**: pytest
 - **Características**: Sin ventanas de interfaz gráfica durante tests
@@ -12,11 +12,12 @@ Este directorio contiene las pruebas unitarias automáticas para todas las funci
 ## Estructura de Pruebas
 
 - **conftest.py**: Configuración global (mocks de Tkinter)
-- **test_dataset_loading.py**: Pruebas de carga de datos (8 tests)
-- **test_nonexistent_data.py**: Pruebas de preprocesado y manejo de datos faltantes (9 tests)
-- **test_column_separation.py**: Pruebas de selección de columnas y separación de datos (12 tests)
-- **test_linear_regression.py**: Pruebas del modelo de regresión lineal y métricas (9 tests)
-- **test_model_manager.py**: Pruebas de guardado y recuperación de modelos (8 tests)
+- **test_dataset_loading.py**: Pruebas de carga de datos (7 tests)
+- **test_nonexistent_data.py**: Pruebas de preprocesado y manejo de datos faltantes (8 tests)
+- **test_column_separation.py**: Pruebas de selección de columnas y separación de datos (11 tests)
+- **test_column_validation.py**: Pruebas de validación de columnas numéricas (6 tests)
+- **test_linear_regression.py**: Pruebas del modelo de regresión lineal y métricas (7 tests)
+- **test_model_manager.py**: Pruebas de guardado y recuperación de modelos (4 tests)
 
 ## Ejecutar las Pruebas
 
@@ -56,45 +57,55 @@ Las pruebas cubren las siguientes funcionalidades:
 
 ### 1. Carga de Datos
 - Carga de archivos CSV
-- Carga de archivos Excel (.xlsx, .xls)
+- Carga de archivos Excel (.xlsx)
 - Carga de bases de datos SQLite
-- Manejo de archivos inexistentes
-- Manejo de formatos no soportados
 - Manejo de valores faltantes en carga
+- Manejo de archivos inexistentes
+- Manejo de formatos no soportados (.txt)
+- Manejo de archivos vacíos
 
 ### 2. Preprocesado de Datos
-- Eliminación de filas con valores faltantes
-- Relleno con media
-- Relleno con mediana
-- Relleno con constante
-- Preservación de columnas sin NaN
+- Eliminación de filas con valores faltantes (dropna)
+- Relleno con media (fillna con mean)
+- Relleno con mediana (fillna con median)
+- Relleno con constante (fillna con valor fijo)
+- Manejo de datasets sin valores faltantes
 - Manejo de columnas completamente nulas
+- Detección de valores faltantes por columna
+- Preservación de columnas sin NaN
 
-### 3. Selección y Separación
+### 3. Validación de Columnas
+- Verificación de columnas numéricas
+- Validación con valores nulos
+- Detección de columnas con texto
+- Detección de columnas mixtas (números y texto)
+- Validación de columnas float
+- Validación de strings numéricos convertibles
+
+### 4. Selección y Separación
 - Selección de columnas de entrada y salida
-- Separación train/test (diferentes proporciones)
-- Verificación de no solapamiento
+- Separación train/test (diferentes proporciones: 80-20, 70-30)
+- Verificación de no solapamiento entre conjuntos
 - Preservación de columnas
 - Manejo de datos pequeños
+- Verificación de que columnas sean numéricas
+- Manejo de errores (columnas inexistentes)
 
-### 4. Modelo de Regresión Lineal
-- Creación y entrenamiento del modelo
-- Cálculo de predicciones
-- Métricas R² (entrenamiento y prueba)
-- Métricas ECM (entrenamiento y prueba)
-- Verificación de coeficientes
-- Generación de fórmula del modelo
-- Modelos con una o múltiples variables
+### 5. Modelo de Regresión Lineal
+- Creación y entrenamiento del modelo (LinearRegression de sklearn)
+- Cálculo de predicciones sobre datos de prueba
+- Métricas R² (score en entrenamiento y prueba)
+- Métricas ECM - Error Cuadrático Medio (entrenamiento y prueba)
+- Verificación de coeficientes e intercepto
+- Generación de fórmula del modelo con formato matemático
+- Modelos con una variable (regresión simple)
+- Modelos con múltiples variables (regresión múltiple)
 
-### 5. Guardado y Recuperación
-- Guardado en formato JSON
-- Guardado en formato Joblib
-- Guardado en formato Pickle
+### 6. Guardado y Recuperación
+- Guardado en formato JSON (con coeficientes y métricas)
 - Carga desde JSON
-- Carga desde Joblib
-- Carga desde Pickle
 - Validación de campos requeridos
-- Preservación de capacidad de predicción
+- Preservación de capacidad de predicción tras recuperación
 
 ## Requisitos
 
