@@ -71,6 +71,8 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
                 df_result[cols_numericas] = df_result[cols_numericas].fillna(
                     df_result[cols_numericas].mean()
                 )
+                # Eliminar filas con NaN residual (columnas completamente nulas)
+                df_result.dropna(inplace=True)
             elif seleccion == "mediana":
                 cols_numericas = df_result.select_dtypes(
                     include=np.number
@@ -78,6 +80,8 @@ def manejo_datos_inexistentes(df, parent_frame, on_apply_callback):
                 df_result[cols_numericas] = df_result[cols_numericas].fillna(
                     df_result[cols_numericas].median()
                 )
+                # Eliminar filas con NaN residual (columnas completamente nulas)
+                df_result.dropna(inplace=True)
             elif seleccion == "constante":
                 valor = simpledialog.askstring(
                     "Valor constante",

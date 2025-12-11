@@ -159,7 +159,7 @@ def iniciar_separacion(
             btn_todos.pack(side=tk.LEFT, padx=5)
             btn_train.pack(side=tk.LEFT, padx=5)
             btn_test.pack(side=tk.LEFT, padx=5)
-            
+
             # Empaquetar el frame de vista si no está visible
             if not frame_vista.winfo_ismapped():
                 frame_vista.pack(pady=10)

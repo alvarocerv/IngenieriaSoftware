@@ -38,7 +38,7 @@ def lanzar_selector(
             )
             return
 
-        # Validar que todas las columnas seleccionadas solo contengan valores numéricos o vacíos
+        # Validar que columnas seleccionadas solo contengan valores numéricos o vacíos
         columnas_no_numericas = []
         todas_columnas = entradas + [salida]
 

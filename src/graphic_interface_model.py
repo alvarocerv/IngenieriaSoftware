@@ -82,6 +82,16 @@ def dibujar_ui_model_creation(
             X_test = test_df[input_cols]
             y_test = test_df[output_col]
 
+            # Validar que no haya NaN en los datos
+            if X_train.isnull().any().any() or y_train.isnull().any():
+                nan_cols = X_train.columns[X_train.isnull().any()].tolist()
+                if y_train.isnull().any():
+                    nan_cols.append(output_col)
+                raise ValueError(
+                    f"Los datos contienen valores faltantes en las columnas: {', '.join(nan_cols)}. "
+                    "Por favor, revisa el paso de preprocesado de datos."
+                )
+
             # Simulación proceso pesado
             time.sleep(0.5)
             model = LinearRegression()
@@ -111,17 +121,15 @@ def dibujar_ui_model_creation(
                     train_df,
                     test_df,
                     txt_descripcion,
-                    guardar_callback,
-                    tab_predicciones=tab_predicciones,
-                    notebook_visor=notebook_visor,
+                    guardar_callback
                 )
 
             frame_content.after(0, _render)
-        except Exception:
+        except Exception :
             frame_content.after(
                 0,
                 lambda: messagebox.showerror(
-                    "Error en Modelo", "Ocurrió un error"
+                    "Error en Modelo", "Ocurrió un error."
                 ),
             )
         finally:
@@ -146,9 +154,7 @@ def mostrar_resultados(
     train_df,
     test_df,
     txt_descripcion,
-    guardar_callback,
-    tab_predicciones=None,
-    notebook_visor=None,
+    guardar_callback
 ):
     """Muestra los resultados del modelo en la interfaz"""
 
@@ -193,7 +199,7 @@ def mostrar_resultados(
     # Gráfico si solo 1 variable: test vs predicción
     # Se dibuja siempre
     def _crear_fig_modelo():
-        fig = plt.Figure(figsize=(6, 4), dpi=100)
+        fig = plt.Figure(figsize=(8, 5), dpi=100)
         ax = fig.add_subplot(111)
         ax.scatter(
             train_df[input_cols[0]],
@@ -215,18 +221,22 @@ def mostrar_resultados(
         )
         ax.set_xlabel(input_cols[0])
         ax.set_ylabel(output_col)
-        ax.legend()
+        ax.legend(loc="best")
+        # Rotar etiquetas del eje X para evitar superposición
+        ax.tick_params(axis='x', rotation=45)
         fig.tight_layout()
         return fig
 
     def _crear_fig_predicciones(x_vals, y_preds, x_label, y_label):
-        fig = plt.Figure(figsize=(6,4), dpi=100)
+        fig = plt.Figure(figsize=(8, 5), dpi=100)
         ax = fig.add_subplot(111)
         # x = valor real de la columna de salida (test), y = predicción según la fórmula
-        ax.scatter(x_vals, y_preds, color='red', label='Predicción (test)', alpha=0.8)
+        ax.scatter(
+            x_vals, y_preds, color="red", label="Predicción (test)", alpha=0.8
+        )
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
- 
+
         # Límites combinados para dibujar líneas de referencia correctamente
         try:
             xmin = float(np.nanmin(x_vals))
@@ -237,74 +247,77 @@ def mostrar_resultados(
             high = max(xmax, ymax)
         except Exception:
             low, high = 0.0, 1.0
- 
+
         # Línea y = x (45°): referencia de predicción perfecta
         x_line = np.linspace(low, high, 100)
-        ax.plot(x_line, x_line, color='black', linestyle='--', label='Referencia (y = x)')
- 
-        # Recta de ajuste (mejor ajuste lineal predicted vs real)
-        try:
-            slope, intercept = np.polyfit(x_vals, y_preds, 1)
-            y_line = slope * x_line + intercept
-            ax.plot(x_line, y_line, color='green', linewidth=2, label=f'Ajuste')
-        except Exception:
-            slope, intercept = None, None
- 
-        ax.set_title('Valores Reales Test (X) vs Predicción (Y)')
+        ax.plot(
+            x_line,
+            x_line,
+            color="black",
+            linestyle="--",
+            label="Referencia (y = x)",
+        )
+
+        ax.set_title("Valores Reales Test (X) vs Predicción (Y)")
         ax.set_xlim(low, high)
         ax.set_ylim(low, high)
         ax.grid(True)
-        ax.legend()
+        ax.legend(loc="best")
+        # Rotar etiquetas del eje X para evitar superposición
+        ax.tick_params(axis='x', rotation=45)
         fig.tight_layout()
         return fig
- 
+
     # Frame contenedor para los gráficos
     charts_frame = ttk.Frame(frame_content)
-    charts_frame.pack(fill='both', expand=True, padx=10, pady=5)
- 
+    charts_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
     if len(input_cols) == 1:
         # Dos columnas con mismo peso
         left_frame = ttk.Frame(charts_frame)
         right_frame = ttk.Frame(charts_frame)
-        left_frame.grid(row=0, column=0, sticky='nsew')
-        right_frame.grid(row=0, column=1, sticky='nsew')
+        left_frame.grid(row=0, column=0, sticky="nsew")
+        right_frame.grid(row=0, column=1, sticky="nsew")
         charts_frame.grid_columnconfigure(0, weight=1)
         charts_frame.grid_columnconfigure(1, weight=1)
- 
+
         # Figura del modelo (izquierda)
         fig_model = _crear_fig_modelo()
         canvas_model = FigureCanvasTkAgg(fig_model, master=left_frame)
         canvas_model.draw()
-        canvas_model.get_tk_widget().pack(fill='both', expand=True)
+        canvas_model.get_tk_widget().pack(fill="both", expand=True)
         plt.close(fig_model)
- 
+
         # Figura predicciones (derecha): x = valor real de la columna de salida, y = predicción según la fórmula
         x_real_vals = test_df[output_col].values
         # Obtener predicciones usando todas las columnas de entrada
         X_test_full = test_df[input_cols]
         y_pred_vals = model.predict(X_test_full)
-        fig_pred = _crear_fig_predicciones(x_real_vals, y_pred_vals, output_col, 'predicción ' + output_col)
+        fig_pred = _crear_fig_predicciones(
+            x_real_vals, y_pred_vals, output_col, "predicción " + output_col
+        )
         canvas_pred = FigureCanvasTkAgg(fig_pred, master=right_frame)
         canvas_pred.draw()
-        canvas_pred.get_tk_widget().pack(fill='both', expand=True)
+        canvas_pred.get_tk_widget().pack(fill="both", expand=True)
         plt.close(fig_pred)
     else:
         # Solo mostramos el nuevo gráfico. Como no hay una única variable de entrada,
         # como x usaremos el índice de las muestras.
         single_frame = ttk.Frame(charts_frame)
-        single_frame.pack(fill='both', expand=True)
- 
+        single_frame.pack(fill="both", expand=True)
+
         # Usar como eje X los valores reales de la columna de salida
         x_real_vals = test_df[output_col].values
         # Obtener predicciones usando todas las columnas de entrada
         X_test_full = test_df[input_cols]
         y_pred_vals = model.predict(X_test_full)
-        fig_pred = _crear_fig_predicciones(x_real_vals, y_pred_vals, output_col, 'predicción ' + output_col)
+        fig_pred = _crear_fig_predicciones(
+            x_real_vals, y_pred_vals, output_col, "predicción " + output_col
+        )
         canvas_pred = FigureCanvasTkAgg(fig_pred, master=single_frame)
         canvas_pred.draw()
-        canvas_pred.get_tk_widget().pack(fill='both', expand=True)
+        canvas_pred.get_tk_widget().pack(fill="both", expand=True)
         plt.close(fig_pred)
- 
 
     # Descripción debajo de métricas y gráfico
     ttk.Label(
@@ -336,8 +349,6 @@ def mostrar_resultados(
                 metricas,
             ),
         ).pack(side="left", padx=5)
-    # Botón para mostrar predicciones
-    pred_tab_ref = [tab_predicciones]
 
     # Predicción interactiva
     if prediction_frame_ref[0] is not None:
