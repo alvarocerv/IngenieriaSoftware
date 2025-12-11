@@ -82,6 +82,16 @@ def dibujar_ui_model_creation(
             X_test = test_df[input_cols]
             y_test = test_df[output_col]
 
+            # Validar que no haya NaN en los datos
+            if X_train.isnull().any().any() or y_train.isnull().any():
+                nan_cols = X_train.columns[X_train.isnull().any()].tolist()
+                if y_train.isnull().any():
+                    nan_cols.append(output_col)
+                raise ValueError(
+                    f"Los datos contienen valores faltantes en las columnas: {', '.join(nan_cols)}. "
+                    "Por favor, revisa el paso de preprocesado de datos."
+                )
+
             # Simulación proceso pesado
             time.sleep(0.5)
             model = LinearRegression()
@@ -115,11 +125,11 @@ def dibujar_ui_model_creation(
                 )
 
             frame_content.after(0, _render)
-        except Exception:
+        except Exception as e:
             frame_content.after(
                 0,
                 lambda: messagebox.showerror(
-                    "Error en Modelo", "Ocurrió un error"
+                    "Error en Modelo", f"Ocurrió un error: {str(e)}"
                 ),
             )
         finally:
@@ -189,7 +199,7 @@ def mostrar_resultados(
     # Gráfico si solo 1 variable: test vs predicción
     # Se dibuja siempre
     def _crear_fig_modelo():
-        fig = plt.Figure(figsize=(6, 4), dpi=100)
+        fig = plt.Figure(figsize=(8, 5), dpi=100)
         ax = fig.add_subplot(111)
         ax.scatter(
             train_df[input_cols[0]],
@@ -211,12 +221,14 @@ def mostrar_resultados(
         )
         ax.set_xlabel(input_cols[0])
         ax.set_ylabel(output_col)
-        ax.legend()
+        ax.legend(loc="best")
+        # Rotar etiquetas del eje X para evitar superposición
+        ax.tick_params(axis='x', rotation=45)
         fig.tight_layout()
         return fig
 
     def _crear_fig_predicciones(x_vals, y_preds, x_label, y_label):
-        fig = plt.Figure(figsize=(6, 4), dpi=100)
+        fig = plt.Figure(figsize=(8, 5), dpi=100)
         ax = fig.add_subplot(111)
         # x = valor real de la columna de salida (test), y = predicción según la fórmula
         ax.scatter(
@@ -250,7 +262,9 @@ def mostrar_resultados(
         ax.set_xlim(low, high)
         ax.set_ylim(low, high)
         ax.grid(True)
-        ax.legend()
+        ax.legend(loc="best")
+        # Rotar etiquetas del eje X para evitar superposición
+        ax.tick_params(axis='x', rotation=45)
         fig.tight_layout()
         return fig
 
