@@ -246,16 +246,6 @@ def mostrar_resultados(
             label="Referencia (y = x)",
         )
 
-        # Recta de ajuste (mejor ajuste lineal predicted vs real)
-        try:
-            slope, intercept = np.polyfit(x_vals, y_preds, 1)
-            y_line = slope * x_line + intercept
-            ax.plot(
-                x_line, y_line, color="green", linewidth=2, label="Ajuste"
-            )
-        except Exception:
-            slope, intercept = None, None
-
         ax.set_title("Valores Reales Test (X) vs Predicción (Y)")
         ax.set_xlim(low, high)
         ax.set_ylim(low, high)
